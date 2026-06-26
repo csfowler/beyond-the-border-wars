@@ -1,0 +1,524 @@
+---
+title: "Supplementary Materials"
+subtitle: "Beyond the Border Wars — Supporting Analyses"
+author: 
+  - Christopher S. Fowler^[Penn State University, Department of Geography, csfowler@psu.edu]
+  - Linda L. Fowler^[Dartmouth College, Department of Government, linda.l.fowler@dartmouth.edu]
+date: today
+format: docx
+bibliography: references.bib
+csl: elsevier-harvard.csl
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: false
+---
+
+```{r setup}
+#| include: false
+
+library(tidyverse)
+library(sf)
+library(knitr)
+library(scales)
+library(RColorBrewer)
+library(patchwork)
+library(redist)
+library(redistmetrics)
+
+source("BBW - Custom Functions.R")
+
+#These objects are produced by BBW - Data Prep BG.R
+#Primary objects (ccstruct_m5 MAIN ensemble)
+load("./Output Data/heterogeneity_bg_ccstruct_m5.Rdata")    # heterogeneity
+load("./Output Data/eg_bg_ccstruct_m5.Rdata")               # eg
+load("./Output Data/t_comp_bg_ccstruct_m5.Rdata")           # t_comp
+load("./Output Data/sb_overlay.Rdata")                       # shortburst
+load("./Intermediate Data/bgs/bgs.dataset.Rdata")            # block groups
+
+#Files produced for supplementary materials
+load("./Output Data/polsby_bg_ccstruct_m5.Rdata")           # polsby
+load("./Output Data/BlackCBC.Rdata")                         # CBC membership
+load("./Output Data/enacted_metrics.Rdata")                  # m116, m118 (enacted-plan diagnostics)
+load("./Output Data/penalty_sweep.Rdata")                    # penalty_sweep (Section 3 robustness check)
+
+#matching above but no administrative boundary constraints and run on tracts instead of block groups
+heterogeneity_tract <- local({ load("./Output Data/heterogeneity_tract1pct.Rdata"); heterogeneity })
+eg_tract            <- local({ load("./Output Data/eg_tract1pct.Rdata");            eg })
+
+#block-group ensembles for Section 2 resolution comparison
+heterogeneity_unc <- local({ load("./Output Data/heterogeneity_bg.Rdata");               heterogeneity })
+eg_unc            <- local({ load("./Output Data/eg_bg.Rdata");                          eg })
+heterogeneity_cc  <- local({ load("./Output Data/heterogeneity_bg_county_cousub.Rdata"); heterogeneity })
+eg_cc             <- local({ load("./Output Data/eg_bg_county_cousub.Rdata");            eg })
+```
+
+# Overview
+
+This document provides additional robustness checks and clarifications supporting the main analysis. In particular we: 1) test the validity of our precinct-level vote totals against another sources of data, 2) examine how sub-unit resolution (census tracts versus block groups) and the constitutionally-required preservation of county and municipal boundaries shape our ensemble results, 3) document how our ensemble results compare with Pennsylvania's enacted congressional maps, 4) expand on the results of our shortburst optimization runs and the parameters behind them, and 5) offer more detail on our decisions to study coalition voting with regard to the election of candidates preferred by Black voters.
+
+# 1. Voting-data validation 
+
+We use precinct-level voting data from the 2020 presidential election prepared by Ruth Buck. The file and its associated documentation are available at https://github.com/RKBuck1/pa_vtds_2020. Precinct data is notoriously difficult to work with because boundaries vary considerably in quality, totals are subject to change at different times as absentee and provisional ballots get counted, and county by county reporting varies in accuracy. Considerable skill is necessary to create a valid, precinct-level file and even then files will rely on assumptions that must be reasonable but cannot be strictly verified. The Voting and Election Science Team (VEST) produces a series of highly-regarded precinct files for all fifty states. For our groundtruthing exercise here we use the PA precinct data from VEST as a benchmark. We find discrepancies between the sources but they have no obvious bias and indicate that the files we use in our analysis are sufficiently comparable to other counts that they should not impact any of our analytic conclusions. Spot checks of underlying satellite data overlaid with boundaries from both data sets in areas where counts diverged significantly (not shown) provided no conclusive evidence that one file was verifiably more accurate than another.  
+
+```{r supp-load-vtds}
+buck <- read_sf(dsn = "./Input Data",         layer = "pa_vtds20") %>%
+  transmute(GEOID20, STATEFP20, COUNTYFP20, VTDST20, NAME20, NAMELSAD20,
+            trump, biden)
+
+vest <- read_sf(dsn = "./Input Data/pa_2020", layer = "pa_2020") %>%
+  mutate(GEOID20 = paste0(STATEFP, COUNTYFP, PRECINCT)) %>%
+  transmute(GEOID20, STATEFP, COUNTYFP, PRECINCT, NAME,
+            G20PRERTRU, G20PREDBID)
+```
+
+## Block-level interpolation comparison
+
+Precinct boundaries don't align across the two files and naming conventions are inconsistent so a precinct-to-precinct comparison is unreliable. Instead we replicate the target count weighting interpolation used in the main analysis to assign vote totals from each precinct file to census blocks, then aggregate the resulting per-block totals to block groups.
+
+```{r supp-block-interpolation}
+pa_crs <- "+proj=lcc +lat_1=40.88333333333333 +lat_2=41.95 +lat_0=40.16666666666666 +lon_0=-77.75 +x_0=600000.0000000001 +y_0=0 +datum=NAD83 +units=us-ft +no_defs"
+
+result_cache <- "./Intermediate Data/buck_vs_vest_bg.Rdata"
+
+#2020 PA census blocks (TotalPop / VAP / BVAP) produced by `BBW - Data Prep BG.R`, already projected to pa_crs.
+load("./Intermediate Data/bgs/stage_blocks_census.Rdata")   # blocks_raw
+blocks20 <- blocks_raw
+
+if(!file.exists(result_cache)){
+  buck_in <- buck %>% st_make_valid() %>% st_transform(pa_crs) %>%
+    transmute(GEOID20, biden, trump)
+  vest_in <- vest %>% st_make_valid() %>% st_transform(pa_crs) %>%
+    transmute(GEOID20, biden = G20PREDBID, trump = G20PRERTRU)
+
+#Interpolate each precinct file onto census blocks then aggregate blocks to block groups
+  buck_bgs <- blocks_to_bg(tcw_blocks(buck_in, blocks20))
+  vest_bgs <- blocks_to_bg(tcw_blocks(vest_in, blocks20))
+  save(buck_bgs, vest_bgs, file = result_cache)
+} else load(result_cache)
+```
+
+## Jaccard similarity
+
+Our measure of comparison is Jaccard similarity: $J(a,b) = \sum_i \min(a_i, b_i) / \sum_i \max(a_i, b_i)$. It equals 1 when the two data sources agree exactly in every block group and 0 when they share nothing.
+
+```{r supp-jaccard}
+bg_pop <- blocks20 %>% st_drop_geometry() %>%
+  mutate(GEOID = substr(GEOID, 1, 12)) %>%
+  group_by(GEOID) %>% summarize(pop = sum(TotalPop, na.rm = TRUE), .groups = "drop")
+
+bg_jacc <- buck_bgs %>%
+  transmute(GEOID, trump_buck = sum_trump, biden_buck = sum_biden) %>%
+  full_join(vest_bgs %>%
+              transmute(GEOID, trump_vest = sum_trump, biden_vest = sum_biden),
+            by = "GEOID") %>%
+  mutate(trump_buck = replace_na(trump_buck, 0),
+         biden_buck = replace_na(biden_buck, 0),
+         trump_vest = replace_na(trump_vest, 0),
+         biden_vest = replace_na(biden_vest, 0),
+         sum_buck   = trump_buck + biden_buck,
+         sum_vest   = trump_vest + biden_vest,
+         jaccard_trump     = ratio(trump_buck, trump_vest),
+         jaccard_biden     = ratio(biden_buck, biden_vest),
+         jaccard_two_party = ratio(sum_buck,   sum_vest)) %>%
+  left_join(bg_pop, by = "GEOID")
+
+bg_jacc %>%
+  summarise(jaccard_trump     = jaccard(trump_buck, trump_vest),
+            jaccard_biden     = jaccard(biden_buck, biden_vest),
+            jaccard_two_party = jaccard(sum_buck,   sum_vest)) %>%
+  kable(digits = 4,
+        caption = "Statewide weighted Jaccard similarity between Buck and VEST block-group-level totals.")
+```
+
+Jaccard similarity is around .95 for both the candidate-specific and two-party totals indicating no difference in how the data sets treat parties. @fig-supp-jaccard-hist shows a long tail to the left where there is real disagreement between data sources, but the bulk of block groups are closely matched (note the square root scale on the y-axis needed to make the long tail visible).
+
+```{r}
+#| label: fig-supp-jaccard-hist
+#| fig-cap: "Distribution of per-block-group weighted Jaccard similarity (two-party total) between Buck and VEST."
+#| fig-width: 6.5
+#| fig-height: 4
+ggplot(bg_jacc, aes(x = jaccard_two_party)) +
+  geom_histogram(bins = 60, fill = "#1f78b4", color = "white") +
+  scale_y_sqrt() +
+  labs(x = "Per-block-group Jaccard (two-party total)", y = "Block groups (sqrt scale)") +
+  theme_minimal()
+```
+
+@fig-supp-jaccard-vs-pop further demonstrates that the match between the data sets is not structured vis-a-vis block group population, but appears to be essentially random noise. In summary, there are differences between the two data sets but they are not favoring one candidate over another and they are not more or less evident in populated or less populated blocks. Visual inspection of differences between specific blocks (not shown) indicated valid choices by the creators of both files but no choice notably better than another.
+
+```{r}
+#| label: fig-supp-jaccard-vs-pop
+#| fig-cap: "Per-block-group Jaccard (two-party total) vs block-group population (log scale). Each point is one PA census block group; block-group population is the sum of block-level decennial populations."
+#| fig-width: 6.5
+#| fig-height: 5
+ggplot(bg_jacc, aes(x = pop, y = jaccard_two_party)) +
+  geom_point(alpha = 0.4, size = 1) +
+  scale_x_log10(labels = scales::comma) +
+  labs(x = "Block-group total population (log scale)",
+       y = "Per-block-group Jaccard (two-party total)") +
+  theme_minimal()
+```
+
+# 2. Sub-unit resolution and boundary constraints
+
+The SMC ensembles that support the analysis in this paper went through a number of revisions in the transition from concept development to final product. Initially it was convenient to use larger sub-units (census tracts) and looser settings for population differences (5% population tolerance) and boundary constraints (free splitting of counties and municipalities). A second ensemble reduced the population tolerance to 1% and used block groups as the unit of analysis. The final analysis builds plans from census block groups at a 1% population tolerance with the constitutionally required preservation of county and municipal boundaries. We offer two ensembles in this vein; one with a hard constraint on the number of county splits (number of districts - 1) and another that prefers fewer county splits but does not strictly limit them. This section asks whether these two design choices: the coarser *resolution* of the early tract ensemble and the absence of *administrative-preservation constraints* drive differences between the early and final ensembles, and finds that they are quite significant.
+
+@fig-supp-resolution-sd shows two crucial shifts in the distribution SD, our measure of heterogeneity, as we adjust resolution and constraints. The first is a shift to the left when we move from tracts to the finer resolution of block groups, the second is a shift both rightward and from a smooth distribution to an increasingly blocky distribution as we move to more restrictive maintenance of administrative boundaries. The shift to the left as we go from tracts to block groups tells us that the increased size of tracts was holding similar people together and so when tracts flip from one district to another it includes a significant push away from heterogeneity. Block groups are probably even more homogeneous than tracts, but their reduced size means that there are many more configurations in which unlike block groups get pulled together into a district, reducing the SD. We see this effect reversed when we add constraints on county and municipal splits. Even soft constraints on splits (which, it turns out are not terribly effective as we will see in the next section) push the SD back to the range where it was for the tract-level ensemble. Since tracts are drawn to respect county boundaries and many municipal boundaries are also used as tract boundaries, the soft constraint is sufficient to pull the SD to the right back to where it was under the tract ensemble. Our determination here is clear that resolution does matter for the analysis we conduct. With respect to the broader points made about cluster size and district size in the main analysis the differences we see between analyses conducted with tracts versus block groups reinforce our view that the underlying complexity of population sorting and administrative boundary choice plays a more significant role in determining the outcomes achievable through policy than most writing on the subject acknowledges.
+
+A more significant issue that arises in our comparison of ensembles is the shift to a blockier set of outcomes as we add the county constraints. Both the tract- and block-group-level ensembles have smooth distributions indicating that the ensemble is finding solutions across a range of outcomes. Adding county constraints, particularly the hard constraint, pushes the ensemble towards less heterogeneous outcomes, but also towards a narrower set of solutions. The extreme of this is found when we look at the distribution of SD for Black voters in six-district plans in the hard constraint model (lower right) where almost all of the plans are solving to a very narrow band of solutions such that the top of the graph had to be cut off for clarity. This indicates that the ensemble is strongly limited in the kinds of plans it can find. In applied terms this is the geographic problem introduced by the cluster of Black voters concentrated in the extremely large county of Philadelphia. In six district plans with county split constraints it is almost impossible to break Philadelphia up and so this high concentration of Black voters always gets grouped together creating a district that diverges significantly from the rest of the state. This isn't a failure of the ensemble so much as a glimpse into the profound influence that the prohibition on splitting counties introduces into our model. It means that the shift towards a more heterogeneous set of districts isn't available in our final model in the same way that it would be in an unconstrained or weakly constrained ensemble and this has ramifications for the values we report in the main analysis. The constraints are real, the model works well enough, but we have to appreciate how important these constraints can be on our understanding of what maps can produce. As we document below, a failure to impose strict constraints on county splits moves our ensemble too far away from enacted plans to be credible even as the enactment of strict constraints materially alters the values we report. Evidence from actual redistricting practice reinforces both sides of this dilemma. @herzig2026 show that soft county constraints in redistricting statutes carry little practical force, with their presence not associated with fewer county splits in enacted congressional maps, supporting our reliance on the hard constraint as a better representation of the binding administrative environment. @clelland2022 confirm that when hard county constraints are imposed, the consequences for partisan equity can be substantial — in Colorado, Democrats were systematically disadvantaged by the same spatial mismatch between county lines and voter concentration that we document here.
+
+```{r}
+#| label: fig-supp-resolution-sd
+#| fig-cap: "Heterogeneity SD distributions for seniors (65+) and Black voters (rows) across three ensemble designs: unconstrained census-tract plans, soft-penalty block-group plans (county_cousub), and the main block-group ensemble with a hard county cap (ccstruct_m5). Fill distinguishes six- from eighteen-district configurations."
+#| fig-width: 6.5
+#| fig-height: 8
+.ens_levels <- c("Tract (no constraints)", "BG (no constraints)",
+                 "BG (soft county+muni)", "BG (hard county+soft muni)")
+
+het_res <- bind_rows(
+  heterogeneity_tract           %>% mutate(ensemble = .ens_levels[1]),
+  strip_type(heterogeneity_unc) %>% mutate(ensemble = .ens_levels[2]),
+  strip_type(heterogeneity_cc)  %>% mutate(ensemble = .ens_levels[3]),
+  strip_type(heterogeneity)     %>% mutate(ensemble = .ens_levels[4])
+) %>%
+  filter(Metric %in% c("Pct65Plus", "PctBlack"),
+         Type   %in% c("Six Districts", "Eighteen Districts")) %>%
+  mutate(
+    Metric   = factor(Metric, levels = c("Pct65Plus", "PctBlack"),
+                      labels = c("Seniors (65+)", "Black voters")),
+    ensemble = factor(ensemble, levels = .ens_levels),
+    Type     = factor(Type, levels = c("Six Districts", "Eighteen Districts"))
+  )
+
+.col_plot <- function(m, legend = FALSE) {
+  ggplot(filter(het_res, Metric == m), aes(x = Value, fill = Type)) +
+    geom_density(alpha = 0.5, color = NA) +
+    facet_wrap(~ ensemble, ncol = 1) +
+    scale_fill_brewer(palette = "Set2") +
+    scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
+    labs(title = m, x = "Heterogeneity SD", y = "Density", fill = NULL) +
+    theme_minimal() +
+    theme(legend.position = if(legend) "bottom" else "none")
+}
+
+.spike_ann <- data.frame(
+  ensemble = factor("BG (hard county+soft muni)", levels = .ens_levels),
+  x = Inf, y = 300, label = "↑ peak ≈ 2200"
+)
+.p1 <- .col_plot("Seniors (65+)")
+.p2 <- .col_plot("Black voters", legend = TRUE) +
+  geom_text(data = .spike_ann, aes(x = x, y = y, label = label),
+            hjust = 1, vjust = 1, inherit.aes = FALSE, size = 3, color = "grey40") +
+  coord_cartesian(ylim = c(0, 350))
+.p1 | .p2
+```
+
+@fig-supp-resolution-seats explores the same phenomenon of outcomes shifting with ensemble resolution and constraints but for the measure of proportionality instead of heterogeneity. Once again we can see the significance of the underlying assumptions to the results we offer in the paper. Once again the complex relationship between population sorting and administrative boundaries belies any simple explanation of the effects of our changes. Moving from tracts to block groups shifts proportionality to favor Democrats in six- and eighteen- district plans, and to proportionality in three- and nine- district plans. The addition of soft constraints mostly reverses this outcome, while the addition of hard constraints acts inconsistently relative to other ensembles. Overall, tracts work to reinforce the effects of clustered populations relative to block groups, but constraints on splitting counties achieve the same outcomes even when using block groups. The end result we report in the main analysis is ultimately a complex interaction of population sorting, county size, and district size confounding any easy claims about how multi-member districts impact proportionality.
+
+```{r}
+#| label: fig-supp-resolution-seats
+#| fig-cap: "Democratic seat-share distributions by ensemble design (rows) and district configuration (columns)."
+#| fig-width: 6.5
+#| fig-height: 6
+.ens_levels <- c("Tract (no constraints)", "BG (no constraints)",
+                 "BG (soft county+muni)", "BG (hard county+soft muni)")
+
+eg_res <- bind_rows(
+  eg_tract %>% mutate(ensemble = .ens_levels[1]),
+  eg_unc   %>% mutate(ensemble = .ens_levels[2]),
+  eg_cc    %>% mutate(ensemble = .ens_levels[3]),
+  eg       %>% mutate(ensemble = .ens_levels[4])
+) %>%
+  filter(!Type %in% c("Fifty Districts", "Seventeen Districts")) %>%
+  mutate(
+    ensemble = factor(ensemble, levels = .ens_levels),
+    Type     = factor(Type, levels = c("Three Districts", "Six Districts",
+                                       "Nine Districts", "Eighteen Districts"),
+                      labels = c("Three", "Six", "Nine", "Eighteen"))
+  )
+
+eg_hist <- eg_res %>%
+  mutate(bin = round(ShareDemSeats * 18) / 18) %>%
+  group_by(ensemble, Type, bin) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(ensemble, Type) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+ggplot(eg_hist, aes(x = bin, y = prop, fill = Type)) +
+  geom_col(width = 1/18, color = NA, position = "identity") +
+  geom_vline(xintercept = 0.52, linetype = "dashed", color = "grey30", linewidth = 0.4) +
+  facet_grid(ensemble ~ Type) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_continuous(breaks = c(1/3, 1/2, 2/3),
+                     labels = c("33%", "50%", "67%")) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(x = "Democratic seat share", y = "Share of plans") +
+  guides(fill = "none") +
+  theme_minimal()
+```
+
+# 3. Comparison with Pennsylvania's enacted congressional plans
+
+A natural question is how the plans our ensemble produces compare with the maps Pennsylvania has actually used. We compare against the state's two most recent enacted congressional plans: the 2018 court-drawn plan used for the 116th Congress, which divided the state into eighteen districts, and the current plan adopted after the 2020 census for the 118th Congress, which divides the state into seventeen. Each enacted plan is compared against the ensemble of the matching magnitude; the eighteen-district plan against the eighteen-district ensemble and the seventeen-district plan against the seventeen-district ensemble (run in parallel with other ensembles throughout, but introduced for the first time here). We employ four traditional redistricting metrics: county splits, municipal splits, Polsby–Popper compactness, and proportionality (Democratic seat share). All quantities are computed at the block-group level where block groups are assigned to an enacted district based on where the bulk of their population falls (districts are actually built from the smaller blocks but a relatively small number of block groups are split across districts).
+
+```{r}
+#| label: tbl-supp-enacted
+#| tbl-cap: "Block-group-level diagnostics for Pennsylvania's two most recent enacted congressional plans."
+tibble(
+  Metric = c("Districts", "County splits", "Municipality splits",
+             "Mean Polsby–Popper", "Democratic seat share"),
+  `116th Congress` = c(m116$ndists, m116$n_county, m116$n_muni,
+                       sprintf("%.3f", m116$pp_mean), sprintf("%.1f%%", 100*m116$dem_share)),
+  `118th Congress` = c(m118$ndists, m118$n_county, m118$n_muni,
+                       sprintf("%.3f", m118$pp_mean), sprintf("%.1f%%", 100*m118$dem_share))
+) %>% kable()
+```
+
+@fig-supp-enacted compares the main, hard county constraint, ensemble that we use in the analysis against enacted plans to document that our ensemble is not functioning completely outside of the expectations of a curated map. The evidence is mixed. The hard county constraint is aggressive and produces plans that split fewer counties than the enacted plans, while the soft constraint on municipality splits allows many more splits than the enacted plans. The soft county split ensemble, which was largely abandoned in the main analysis, resulted in county split distribution far to the right of the enacted plans--much like the municipality splits shown here. It was for this reason, despite its propensity for producing less heterogeneous districts for multi-member delineations, that the hard constraint model was selected for the main analysis. This choice aligns with what is known about how county constraints operate in practice: @herzig2026 find that soft county split rules in redistricting statutes do not reliably reduce county splits in enacted plans, reinforcing our judgment that the soft-constraint ensemble diverges too far from the redistricting reality it is meant to model. We acknowledge that our implementation of the county constraint is imperfect, either too loose or too restrictive depending on the ensemble, but conclude that the complex interaction between constraint and outcome strengthens our claims about the need for careful, geographically specific implementation of multi-member districts. For the other metrics we find our ensembles to fall short of the enacted plans on compactness, but reasonably so and within expected distances given our preference for allowing the algorithm to accept a wider array of solutions. Democratic seat share appears where we would expect it to for seventeen- and eighteen-district plans with the enacted plans within the distribution of our ensemble and with a distribution leaning Republican from there.
+
+```{r}
+#| label: fig-supp-enacted
+#| fig-cap: "Enacted Pennsylvania congressional plan (red line) overlaid on the SMC ensemble of the matching magnitude."
+#| fig-width: 6.5
+#| fig-height: 6
+
+enacted_panel <- function(vals, enacted, breaks, xlim, ylim, xlab, ylab){
+  ggplot(data.frame(v = vals), aes(v)) +
+    geom_histogram(breaks = breaks, fill = "#4a6fa5", color = NA) +
+    geom_vline(xintercept = enacted, color = "firebrick", linewidth = 0.8) +
+    coord_cartesian(xlim = xlim, ylim = ylim) +
+    labs(x = xlab, y = ylab) +
+    theme_minimal()
+}
+
+#Each column is one metric; top = 18-district (116th), bottom = 17-district
+#(118th). Axes are matched within a column across the two rows.
+enacted_specs <- list(
+  list(col = "n_county_splits",    df = eg,     xlab = "County splits",
+       et = m116$n_county, eb = m118$n_county),
+  list(col = "n_muni_splits",      df = eg,     xlab = "Municipality splits",
+       et = m116$n_muni,   eb = m118$n_muni),
+  list(col = "mean_polsby_popper", df = polsby, xlab = "Mean Polsby–Popper",
+       et = m116$pp_mean,  eb = m118$pp_mean),
+  list(col = "ShareDemSeats",      df = eg,     xlab = "Democratic seat share",
+       et = m116$dem_share, eb = m118$dem_share)
+)
+
+tops <- vector("list", length(enacted_specs))
+bots <- vector("list", length(enacted_specs))
+for(i in seq_along(enacted_specs)){
+  s  <- enacted_specs[[i]]
+  vt <- s$df[[s$col]][s$df$Type == "Eighteen Districts"]
+  vb <- s$df[[s$col]][s$df$Type == "Seventeen Districts"]
+  #Common x-range: span all plotted values plus both enacted lines, then pad
+  #~10% beyond so the extreme enacted line has room for a tick label.
+  rng <- range(c(vt, vb, s$et, s$eb), na.rm = TRUE)
+  pad <- diff(rng) * 0.10; if(pad == 0) pad <- abs(rng[1]) * 0.10 + 1
+  xlim   <- c(rng[1] - pad, rng[2] + pad)
+  breaks <- seq(xlim[1], xlim[2], length.out = 31)
+  #Common y-range: tallest bar across both rows under the shared binning.
+  ymax <- max(hist(vt, breaks = breaks, plot = FALSE)$counts,
+              hist(vb, breaks = breaks, plot = FALSE)$counts)
+  ylim <- c(0, ymax)
+  tops[[i]] <- enacted_panel(vt, s$et, breaks, xlim, ylim, s$xlab,
+                             if(i == 1) "18-district (116th)" else NULL)
+  bots[[i]] <- enacted_panel(vb, s$eb, breaks, xlim, ylim, s$xlab,
+                             if(i == 1) "17-district (118th)" else NULL)
+}
+patchwork::wrap_plots(c(tops, bots), nrow = 2, byrow = TRUE)
+```
+
+# 4. Optimization vs simulation
+
+The substantive argument we make is that the plans developed under different district-size constraints are fundamentally different on important metrics like proportionality and competitiveness. These differences can make the specifics of where lines are drawn less crucial to achieving representation. Nevertheless, we exist in an age of hyper-partisan map drawing, and so it is still crucial to examine the extreme values obtainable by a motivated map drawer. The shortburst function from the redist package takes likely starting plans and seeks optima on specific criteria by selecting the best among competing plans, proposing variations on that plan, selecting the best from among those variations, and so on. It is not a true optimization, as the complete space of possible plans is far too large, but it should find reasonable local maxima that could approximate the output of a motivated draw. The results we show below relate the values obtained by our ensemble (without optimization) to the values obtained through optimization in greater detail than was shared in the main analysis, as part of a suite of tests we ran to establish the reliability of our ensemble results. The results here stem from a process that scans the SMC ensemble for promising plans, then optimizes off of those plans. Most targets are seeded from the single best ensemble plan (max_bursts = 2000, burst_size = 10). 
+
+## Partisan maxima across configurations
+The results of our optimization run are generally positive for our ensemble; our unmotivated maps find the extreme plans most of the time. A Democratic outlier is missing from our six- and nine- district ensembles while Republican outliers are missing from our eighteen-district ensembles. While these results suggest room to expand our simulation runs to more fully explore the possibilities afforded by these simulations, there are not major differences between what we find and what a motivated map drawer could achieve.
+
+```{r}
+#| label: fig-supp-partisan-envelope
+#| fig-cap: "Distribution of Democratic seat share across the SMC ensemble for each district configuration (light fill), with shortburst maxima for the partisan extremes overlaid: gold up-triangle = maximum Dem seats reachable, red down-triangle = minimum Dem seats reachable (equivalently maximum Rep seats)."
+#| fig-width: 6.5
+#| fig-height: 6
+sb_part <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target %in% c("dem_seats_max","rep_seats_max"),
+         !Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  mutate(label = recode(target,
+                        dem_seats_max = "Max Dem seats",
+                        rep_seats_max = "Max Rep seats"))
+.eg_part <- eg %>%
+  filter(!Type %in% c("Seventeen Districts", "Fifty Districts"))
+xr   <- range(c(.eg_part$ShareDemSeats, sb_part$ShareDemSeats), na.rm = TRUE)
+pad  <- diff(xr) * 0.08
+xlim <- c(xr[1] - pad, xr[2] + pad)
+
+ggplot(.eg_part, aes(x = ShareDemSeats)) +
+  geom_histogram(binwidth = 1/18, fill = "grey80", color = NA) +
+  geom_point(data = sb_part,
+             aes(x = ShareDemSeats, y = 0, shape = label, fill = label),
+             color = "black", size = 3) +
+  scale_shape_manual(values = c("Max Dem seats" = 24, "Max Rep seats" = 25)) +
+  scale_fill_manual(values  = c("Max Dem seats" = "gold",
+                                 "Max Rep seats" = "firebrick")) +
+  scale_x_continuous(limits = xlim,
+                     labels = scales::percent_format(accuracy = 1)) +
+  facet_wrap(~ Type, scales = "free_y") +
+  labs(x = "Democratic seat share", y = "Plans",
+       shape = NULL, fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+## Competitiveness
+Competitiveness is not a constraint typically imposed on ensembles as it is not a formal criteria for adjudicating plan quality, but many voters do value it in map production and it is worth noting that the ensemble does not perform as well as it could on this metric. While the eighteen-district ensemble finds the competitive maximum in terms of districts within five points of a seat change, none of the other ensembles do and some, like the three-district ensemble fall well short of what a motivated map drawer could achieve.
+
+```{r}
+#| label: fig-supp-comp-envelope
+#| fig-cap: "Distribution of plan-level competitiveness across the SMC ensemble with shortburst maxima overlaid. Top panel: share of districts within 5 pp of a seat-change boundary. Bottom panel: mean per-district flip probability under a normal swing of sigma=0.03."
+#| fig-width: 6.5
+#| fig-height: 7
+ndists_map <- c("Three Districts" = 3, "Six Districts" = 6,
+                "Nine Districts"  = 9, "Eighteen Districts" = 18)
+
+eg_comp <- eg %>%
+  filter(!Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  mutate(n_ds = ndists_map[as.character(Type)],
+         share_marginal = n_marginal_5pt / n_ds,
+         flip_prob      = prob_seat_change_sigma3)
+
+sb_marg <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5", target == "marg5pt_max",
+         !Type %in% c("Seventeen Districts", "Fifty Districts"))
+sb_flip <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5", target == "flipprob_max",
+         !Type %in% c("Seventeen Districts", "Fifty Districts"))
+
+.pad_lim <- function(...){
+  xr <- range(c(...), na.rm = TRUE)
+  p  <- diff(xr) * 0.08
+  c(xr[1] - p, xr[2] + p)
+}
+xlim_marg <- .pad_lim(eg_comp$share_marginal, sb_marg$share_marginal)
+xlim_flip <- .pad_lim(eg_comp$flip_prob,      sb_flip$prob_seat_change_sigma3)
+
+.y_max <- 250000
+
+p_marg <- ggplot(eg_comp, aes(x = share_marginal)) +
+  geom_histogram(fill = "grey80", color = NA, bins = 30) +
+  geom_point(data = sb_marg, aes(x = share_marginal, y = 0),
+             shape = 24, fill = "gold", color = "black", size = 3) +
+  scale_x_continuous() +
+  scale_y_continuous(labels = scales::comma) +
+  coord_cartesian(xlim = xlim_marg, ylim = c(0, .y_max)) +
+  facet_wrap(~ Type, nrow = 1) +
+  labs(x = "Share of districts within 5pp of seat change",
+       y = "Plans") +
+  theme_minimal()
+
+p_flip <- ggplot(eg_comp, aes(x = flip_prob)) +
+  geom_histogram(fill = "grey80", color = NA, bins = 30) +
+  geom_point(data = sb_flip, aes(x = prob_seat_change_sigma3, y = 0),
+             shape = 24, fill = "gold", color = "black", size = 3) +
+  scale_x_continuous() +
+  scale_y_continuous(labels = scales::comma) +
+  coord_cartesian(xlim = xlim_flip, ylim = c(0, .y_max)) +
+  facet_wrap(~ Type, nrow = 1) +
+  labs(x = "Mean per-district flip probability (sigma = 0.03)",
+       y = "Plans") +
+  theme_minimal()
+
+p_marg / p_flip
+```
+
+# 5. BVAP and the coalition threshold
+This section works through the complexities of modeling the success of candidates preferred by Black voters in a state with no formal VRA compliance requirement. We also continue our analysis of the maxima attainable by a motivated map drawer with respect to the election of representatives preferred by Black voters. Whereas in some states a modeler might reasonably impose a VRA requirement as a condition of plan acceptance, candidates preferred by Black voters succeed at a high rate in Pennsylvania without that criterion being enforced in map drawing. As of 2026, two of the seventeen members of Pennsylvania's congressional delegation belong to the Congressional Black Caucus, so it matters that our ensemble can recreate these conditions.
+
+The Methods section defines two seat-counting thresholds for Black-preferred candidates:
+
+- **Standard Threshold**: $toWin = \mathrm{VAP}/(M+1)$ — the share at which a group is guaranteed to elect a candidate regardless of how the remaining vote distributes.
+- **Coalition**: $toWin = \mathrm{VAP}/(M+2)$ — the looser share at which a candidate preferred by the group can win with modest support from other voters.
+
+At $M=1$ these are 50% and 33%; at $M=6$ they are 14.3% and 12.5%. The first is the standard ballot-arithmetic guarantee; the second formalizes the empirical reality of coalition voting in U.S. congressional elections, where Black-preferred candidates often win with substantial support from other voters. This is particularly relevant for our analysis where Black voters are concentrated in Democrat-heavy Philadelphia. Black voters are frequently successful in nominating preferred candidates in Democrat-only primaries and then their preferred candidates are regularly successful against Republican opponents in Democrat-heavy Congressional districts. It is worth noting that this is a pathway to success under Pennsylvania's current system. We have no information about how successful Black-preferred candidates would be outside of the party only primary system. 
+
+Broader support for our coalition approach can be seen in @fig-supp-cbc-context showing the relationship between BVAP and Congressional Black Caucus membership across all 435 U.S. Congressional Districts (116th Congress). Above our Coalition threshold all but a few outlier seats elect CBC members.
+
+```{r}
+#| label: fig-supp-cbc-context
+#| fig-cap: "BVAP share by district across the 435 congressional districts of the 116th Congress, colored by whether the seated representative is a member of the Congressional Black Caucus (CBC). Vertical reference lines mark the Standard threshold for SMD (50%) and the coalition threshold (33%)."
+#| fig-width: 6.5
+#| fig-height: 4
+
+ggplot(BlackCBC, aes(x = bvap_pct, fill = is_in_cbc)) +
+  geom_histogram(bins = 40, color = NA, position = "stack") +
+  geom_vline(xintercept = 50, color = "black", linetype = "dashed") +
+  geom_vline(xintercept = 33, color = "grey50", linetype = "dotted") +
+  scale_fill_brewer(palette = "Set2",
+                    name = "CBC member") +
+  labs(x = "District BVAP (%)", y = "Districts") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+
+## Seats maxima for candidates preferred by Black voters
+
+Because the count of Black-preferred seats is especially sensitive to the choice of starting plan a search begun from the wrong region of plan space can miss some configurations entirely. For this reason those targets instead use a heavier search (max_bursts = 5000, burst_size = 20) seeded from five deliberately diverse ensemble plans. To choose the seeds we scored every plan in the SMC ensemble on five complementary criteria, each capturing a different way a plan can be favorable to Black-preferred candidates, and took the single best-scoring plan under each:
+
+1. the most Black-preferred seats at the standard threshold, $1/(M+1)$;
+2. the most Black-preferred seats at the looser coalition threshold, $1/(M+2)$;
+3. the highest single-district BVAP share — the most heavily packed individual district;
+4. the highest *second*-ranked district BVAP share — the strongest available "second" Black-opportunity district; and
+5. the highest combined BVAP share of the top two districts — two strong districts considered jointly.
+
+Each of the five seeds was then optimized separately toward both the standard and the coalition seat count, and for each threshold we report the best plan found across all five starting points. Seeding this way is what makes the search informative: as we discuss below, the seat-maximizing plans were typically reached not from the single most heavily packed district (criterion 3) but from starting plans with two balanced, only moderately high BVAP districts (criteria 4 and 5). We undertook these additional measures because our optimizations were otherwise simply not finding the multiple seat combinations that we know are possible from over a decade of map drawing in Pennsylvania. Our results point to possible limitations in our exploration of boundaries for our other metrics and of the shortburst technique as 'optimum' more broadly.
+
+```{r}
+#| label: fig-supp-black-envelope
+#| fig-cap: "Distribution of Black-preferred seats per plan across the SMC ensemble with the shortburst maximum overlaid as a gold up-triangle, under the standard threshold (top facets) and the coalition threshold (bottom facets) for each district configuration."
+#| fig-width: 6.5
+#| fig-height: 6
+.bs_levels <- c("Standard", "Coalition")
+
+#Ensemble distributions for both thresholds.
+bs_env <- eg %>%
+  filter(!Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  select(Type, BlackSeats, BlackSeats37) %>%
+  pivot_longer(c(BlackSeats, BlackSeats37),
+               names_to = "threshold", values_to = "n_seats") %>%
+  mutate(threshold = recode(threshold,
+                            BlackSeats   = .bs_levels[1],
+                            BlackSeats37 = .bs_levels[2]),
+         threshold = factor(threshold, levels = .bs_levels))
+
+#Shortburst maxima for both thresholds (standard -> BlackSeats column,
+#coalition -> BlackSeats37 column).
+sb_black <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target %in% c("black_seats_max", "black_seats37_max"),
+         !Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  mutate(threshold = recode(target,
+                            black_seats_max   = .bs_levels[1],
+                            black_seats37_max = .bs_levels[2]),
+         threshold = factor(threshold, levels = .bs_levels),
+         n_seats   = ifelse(target == "black_seats_max", BlackSeats, BlackSeats37))
+
+ggplot(bs_env, aes(x = n_seats, fill = factor(n_seats))) +
+  geom_bar(color = NA) +
+  geom_point(data = sb_black, aes(x = n_seats, y = 0),
+             shape = 24, fill = "gold", color = "black", size = 3,
+             inherit.aes = FALSE) +
+  scale_fill_brewer(palette = "Set2", name = "Seats") +
+  scale_x_continuous(breaks = 0:2) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_cartesian(ylim = c(0, 250000)) +
+  facet_grid(threshold ~ Type) +
+  labs(x = "Black-preferred seats per plan", y = "Plans") +
+  theme_minimal() +
+  theme(strip.text.x = element_text(size = 8))
+```
+
+The additional search criteria built into our examination of maxima for seats electing candidates preferred by Black voters show that our ensemble is largely successful in exploring the space of possible outcomes. Our ensemble misses a second coalition seat in multi-member districts, but finds that seat regularly in eighteen-district plans. The shortfall is almost entirely a product of the hard county constraint as the soft county constraint found two-coalition-seat plans regularly. The parallel with partisan representation is clear: the same county constraint structure that limits available outcomes for Black voters is associated in other states with systematic disadvantage for Democrats [@clelland2022], reflecting a common mechanism in which administrative boundaries compress the space of feasible solutions in ways that interact with the spatial distribution of any minority population. Once again, the critical role played by the relationship among district size, cluster size, and administrative units is made visible.

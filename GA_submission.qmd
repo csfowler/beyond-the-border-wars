@@ -1,0 +1,746 @@
+---
+title: "Beyond the Border Wars: Representation, Scale, and Multi-Member Districts"
+author: 
+  - Christopher S. Fowler^[Penn State University, Department of Geography, csfowler@psu.edu]
+  - Linda L. Fowler^[Dartmouth College, Department of Government, linda.l.fowler@dartmouth.edu]
+format:
+  docx:
+    reference-doc: custom-reference-doc.docx
+  elsevier-pdf:
+      journal: 
+        name: Geographical Analysis
+        formatting: preprint
+        layout: onecolumn
+        cite-style: authoryear
+        fig-pos: "H"
+      citeproc: false
+      filters: 
+        - at: pre-render
+          path: "./_extensions/wordcount/citeproc.lua"
+        - at: pre-render
+          path: "./_extensions/wordcount/wordcount.lua"
+bibliography: references.bib
+execute: 
+  echo: false
+editor: 
+  markdown: 
+    wrap: none
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r mysetup,echo=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(message = FALSE) 
+options("rgdal_show_exportToProj4_warnings"="none") #suppresses warning messages from rgdal
+#Libraries
+library(RColorBrewer)
+library(tidyverse)
+library(ggpubr)
+library(grid)
+library(gridExtra)
+verbose=FALSE
+source("./BBW - Data Prep BG.R")
+```
+
+## Abstract
+
+Proposed redistricting reforms often focus on fixing gerrymandered maps or restructuring elections to boost proportionality. Recent work shows that, averaged across all fifty states, multi-member districts paired with proportional ranked-choice voting can deliver near-proportional outcomes while curbing the gains available to a partisan map-drawer. We use the case of Pennsylvania to show that the effect of any given reform depends on how the size and location of a state's population clusters align with the size of its districts, a geographic interaction that resists one-size-fits-all prescription. Moreover, complex relationships among population clusters, district size, and administrative units like counties may limit the benefits of multi-member districts. Enlarging districts to elect multiple representatives increases the heterogeneity of district populations, increases competitiveness, and broadens opportunities for effective representation across most of the state. However, proportionality and opportunities for Black voters to elect preferred candidates move unevenly. We argue that the match between district magnitude and cluster size must be considered for reforms to succeed.
+
+## Introduction
+
+Conflict over defining legislative districts in the U.S. has sparked court cases and legislation to fix what is widely perceived as a broken system. Typically, reformers have focused on procedural change in the way boundaries are drawn, such as the adoption of independent districting commissions [c.f. @ohiosecretaryofstate2024; @votersnotpoliticians2018], or the way maps are evaluated [@deford2021]. Although offering substantial improvements over current practices, these proposals face the problem of population sorting in the U.S. along racial and partisan lines that invite gerrymandering [@cottrell2019]. Others advocate for major structural change in the conduct of elections, such as proportional representation [@carey2011; @carey2024; @douglas1923]. This remedy can achieve votes-to-seats ratios that mirror parties' aggregate share of the statewide vote in each district but is not without drawbacks. Proportional representation conflicts with historical traditions of geographically-defined communities of interest and centralizes control of nominations in party organization. Most importantly, it can produce maps that appear fair according to aggregate statewide results but may be rife with uncompetitive seats.
+
+Large, multi-member districts (MMDs) had begun to attract attention as a means of addressing the drawbacks of each remedy [@drutman2020; @rep.beyer2025]. Then, districting battles reached new heights in 2026, as Republicans and Democrats vied for control of Congress through open and aggressive gerrymandering and southern states exploited the Supreme Court's decision regarding Section 2 of the VRA in *Louisiana v. Callais* [-@callais2026] to eliminate many majority-minority districts through cracking and packing of Black communities. Suddenly, politicians and scholars were publicly embracing multi-member districts, which have a long history in the U.S. [@monmonier2001], as an alternative to the chaotic and profoundly unfair congressional maps that would govern the 2026 midterm elections. Recent work by @garg2026 confirmed the promise of this approach, showing across all fifty states that three-member districts paired with single-transferable-vote (STV) ballots can deliver near-proportional outcomes while substantially curtailing the gains available to a partisan mapmaker.
+
+Although cross-state results establish the aggregate case for MMDs, they are silent on two important questions of representation. First, how does the political geography of each state—the size and location of population clusters—determine whether MMDs will improve district proportionality within its borders? Second, what is the effect of MMDs on other aspects of representation, such as the heterogeneity of constituencies, the competitiveness of district elections, and the impact on Black voters? These are issues that require analysis on a state-by-state level. We therefore employ a geographical perspective that emphasizes the complex interaction of historical, administrative, and representational factors within individual districts [@fowler2022], following a line of inquiry similar to @garg2026. By holding a single state constant we thus interrogate how the size and location of population clusters interact with district magnitude to determine not only proportionality but also the heterogeneity of within-district populations, the competitiveness of election results, and the representational outcomes for Black voters. We argue that the hybrid system embodied in multi-member districts is superior to either procedural change or proportional representation as a means of improving legislative maps. But we caution that MMDs cannot fully correct the distortions of clustered populations and between-district variability. Reformers need to recognize the constraints of population sorting and geography and consider how variations across states are likely to affect the implementation of any MMD system.
+
+Our results for Pennsylvania indicate that larger districts increase district heterogeneity with the potential to improve outcomes for partisans, poor residents, and Black populations. They further show how district size affects proportionality for parties, wasted votes, competitiveness, and racial equity, but that the improvements are not uniform across the state. Multi-member districts deliver predicted gains on key variables affecting representation with the conspicuous exception of the large Black, Democratic population in Philadelphia. Ironically, the combination of proportionality and the state constitutional mandate to preserve county boundaries confound the broader tendency towards better representation identified by @garg2026. Nevertheless, our observations of the specific geography of the state suggest an improvement in political representation for a significant majority of voters. We suspect, moreover, that conditions of greater heterogeneity arising from MMDs eventually will encourage electoral coalitions that mitigate the most extreme forms of partisan polarization.
+
+### Population clusters and gerrymandering
+
+Although sorting is a necessary condition for gerrymandering to work, it is not sufficient for partisan maps in large districts. This result reflects a long-standing insight in geography that the concentration of a group depends on the scale at which its population is aggregated; as areal units grow larger, group shares regress toward the regional mean and measured segregation declines [@woods1976; @openshaw1977], a scale effect that electoral geographers linked early on to the proportionality of district-based representation [@taylor1979; @paddison1976]. Our contribution is not to rediscover this relationship but to trace, within a single state, how the interaction of clusters with district magnitude plays out across several dimensions of representation. If groups are distributed evenly across the landscape, then boundary changes cannot alter the proportions of any one group across districts. When at least one significant group is clustered geographically, however, changing boundaries can affect electoral outcomes. Thus, Democrats concentrated in large cities frequently experience penalties [@rodden2019], while dispersed groups also suffer electoral harm [@forest2018,8]. Whether clustered or dispersed populations are advantaged or disadvantaged depends, largely, on who draws the maps and the statutes guiding their efforts. In practice, both dispersed Republicans and clustered Democrats have established borders for their own political advantage.
+
+A corollary to this result is that geographically-defined districts are ineffective in advancing the priorities of geographically dispersed constituencies [@forest2018] unless the population is present in sufficient numbers to win representation everywhere. Workers employed in manufacturing, for example, potentially share policy preferences yet in Pennsylvania they are unlikely to obtain direct representation for those interests because they are not concentrated in a particular location and do not constitute a large enough group statewide to gain representation without clustering. This corollary suggests the importance of an electoral system that promotes coalition building; a key characteristic of proportional representation systems as we discuss below.
+
+A final, but crucial point about population clusters and gerrymandering is that district size determines the importance of residential sorting because clustering can occur at different, or multiple scales [@manley2015; @fowler2016]. For example, Hispanic populations in Pennsylvania occur in multiple numerically small clusters. Their population share varies widely across districts when drawing fifty state senate seats depending on whether boundaries capture or split one or more of these clusters. The larger congressional district size, however, means that the Hispanic share of the population varies only a little between districts regardless of boundary location. In contrast, Black populations in Pennsylvania are clustered in very large numbers in Philadelphia with smaller and medium-sized clusters elsewhere. The Black population, as seen below, shows huge variation between congressional districts, and an entirely different pattern of variation at the scale of state senate districts.
+
+### Components of representation
+
+Representation is distorted by the interaction between population clusters and district size in several different ways. These include four goods a reform should advance: heterogeneous constituencies, proportional outcomes, competitive elections, and a fair chance at representation for Black voters.
+
+### Heterogeneity as a representational good
+
+The case for a district that mirrors the diversity of the state is not self-evident. An influential line of thinking treats homogeneous districts as the more authentic vehicle for representation because a representative who shares the interests of a like-minded constituency can advocate for them clearly and be held accountable for doing so. The majority-minority districts drawn under the Voting Rights Act embody this logic, as do the "communities of interest" criteria written into many state constitutions and the broader intuition that people are best represented by someone who is demonstrably one of them.
+
+We follow a different tradition, grounded in Fenno's account of how members of Congress actually construct their relationships with the people they represent [@fenno1977]. Fenno observed that representatives perceive their constituencies not as a single undifferentiated bloc but as a series of nested and overlapping groups. He demonstrates how easy it is for members to cultivate support in highly homogeneous districts simply by being "like" the dominant group. But he primarily describes the work of representation as assembling support across differences rather than ministering to an undifferentiated whole. A heterogeneous district, thus, is not a defect to be engineered away but the ordinary condition of representation and a source of deliberative value. A legislator who must simultaneously answer to seniors and young families, to manufacturing and service workers, to Black and white constituents cannot reduce the job to delivering a single group's program. Fiorina's analysis of the link between constituency composition and legislative behavior points the same way, showing that representatives drawn from internally diverse districts face cross-pressures that push them toward moderation and coalition-building, while those from homogeneous districts face no comparable discipline [@fiorina1974].
+
+Homogeneity also carries representational costs. A district engineered to be politically or demographically uniform insulates its representative from the need to weigh competing claims and dampens the incentive to compete for votes across group lines. And when uniformity is manufactured by sorting a clustered group into a handful of districts, it concentrates that group's strength in a way that drains its influence everywhere else; a dynamic we return to in discussing representation for Black voters. None of this means homogeneity is never warranted; it means homogeneity is a remedy for specific harms rather than a freestanding representational good of the same standing as the broad, cross-cutting constituency that heterogeneity produces. Because larger districts mechanically dilute the weight of any single cluster, they tend to be more heterogeneous and it is this property, not district size as such, that we treat as representationally valuable.
+
+### Proportionality
+
+Proportionality, defined as a close correspondence between the share of votes a group casts and the share of seats it wins, is widely treated as a core criterion of fair representation. Where seats and votes diverge, some voters' ballots translate into less legislative power. Persistent divergence consigns groups to under-representation no matter how many votes they amass [@taagepera1989]. The concern is most relevant for political and racial minorities whose support is most easily submerged under winner-take-all rules and for whom proportional and semi-proportional systems have long been advanced as a remedy [@guinier1993; @carey2011]. Proportionality is thus not merely an accounting convenience but a substantive representational good, which is why it anchors the literatures both for judging individual plans and for proposing wholesale change to the electoral system.
+
+We adopt proportionality as an evaluation criteria for three reasons. First, reducing a plan to a single, interpretable seats-to-votes relationship lets us compare district magnitudes *across* plans and *against* the alternatives a map-drawer might have chosen [@garg2026]. Second, departures from proportionality are the most legible signature of the manipulation we are concerned with; when a clustered group's seat share swings far from its vote share as boundaries move the resulting gap is the footprint of packing and cracking. Third, proportionality is the dimension on which the structural reform we examine, multi-member districts with proportional voting, stakes its strongest claim. The measure is imperfect, and no single operationalization commands universal assent. Consequently, we report several complementary measures and define each formally in the Metrics and Methods section.
+
+### Competitiveness
+
+Proportionality and heterogeneity describe how well a plan represents groups in the aggregate: competitiveness describes whether individual contests are close enough to discipline the people who win them. We treat it as a third representational dimension because it captures something the first two miss: a plan can be perfectly proportional, internally heterogeneous, and still consist entirely of safe seats whose holders face no credible threat of replacement. A long line of work documents that legislators from competitive districts track constituent preferences more closely precisely because they can be turned out of office [@griffin2006; @mayhew1974]. First, erosion of competition is the standard worry behind both scholarly and public concern over accountability [@sulkin2005; @murphy2009]. Second, competition also governs who is willing to run: uncontested and lopsided races deter strong challengers and thin the supply of candidates, so a plan's distribution of margins helps determine not only how responsive the winners are but whether voters are offered a meaningful choice at all. District magnitude bears directly on this dimension, because the vote share needed to win a seat falls as districts grow, reshaping how many districts sit near a seat-flipping threshold.
+
+### District Size and Race
+
+The argument so far applies to any clustered group, but in many states it is most pressing for Black voters. Black communities are especially vulnerable because their clustering so often matches the scale at which it can be exploited. The current congressional district size of 760,000 people frequently aligns with the scale of urban Black population clusters shaped by historical and ongoing racism, which makes them prime targets for gerrymandering [@fowler2022]. In urban areas, large Black populations are packed or cracked to weaken their electoral power, while in smaller cities and rural areas, particularly in the South, dispersed Black populations fall below the concentration requirement of the Gingles test[^1] and thus fall victim to partisan map drawing. The result is a group whose representation is extremely sensitive to the interaction between cluster scale and district size.
+
+The Voting Rights Act was intended to overcome voter prejudice and residential segregation by mandating majority-minority districts. This initially increased the number of Black legislators but often diminished Black political influence. Concentrating Black voters into VRA districts reduced their presence—and potential coalition value—in surrounding districts [@canon1999; @grofman1998; @lublin1999]. Persistent segregation heightens vulnerability to manipulation and often requires “reverse gerrymandering” to preserve Black representation [@nagle2019]. Meanwhile, other structural changes like municipal annexations [@durst2023] or redistricting that casts Black voters out of their home counties [@niven2022] further dilute influence. 
+
+[^1]: The *Gingles* test, established in *Thornburg v. Gingles* (1986), outlines three preconditions for claiming vote dilution under Section 2 of the Voting Rights Act: (1) the minority group must be sufficiently large and geographically compact to form a majority in a single-member district; (2) the group must be politically cohesive; and (3) the majority must vote sufficiently as a bloc to usually defeat the minority's preferred candidate.
+
+Hispanic populations in Pennsylvania have grown disproportionately relative to other groups in recent years accounting for over 50% of population growth between 2010 and 2020 [@krogstad2020]. While significant concentrations do exist, particularly in counties in the Southeast outside of Philadelphia, there is no single population cluster that is relevant for the drawing of *Congressional* legislative districts. A discussion of State House or State Senate districts would, in contrast, need to carefully document the impacts on Hispanic voters. We therefore bound our claims about race to Black voters not because Hispanic representation is less important but because of the scale of our analysis. The inability to draw a district in which Hispanic voters could elect a preferred candidate without coalition support is itself evidence for our broader claim that the relationship between district size and population clustering, not clustering alone, is what governs representation.
+
+### Multi-member districts and the single transferable vote
+
+Multi-member districts are not a novelty in American elections. They have a long history, remain in use for many state and local offices [@monmonier2001], and drew sustained scholarly attention in the decades after the Supreme Court's "one person, one vote" rulings, when researchers traced their effects on incumbency, legislators' ideological positions, and minority representation. That body of work offers limited guidance at the congressional scale we study because it rests on comparatively small state and local districts. Moreover, most of the cases examined used an at-large, winner-take-all format in which a cohesive majority could capture every seat. It was precisely this at-large form, deployed across the post-Reconstruction South to submerge Black voters, that led Congress to outlaw multi-member congressional districts in 1967 [@monmonier2001] and, unsurprisingly, the early verdict on multi-member districts and Black representation was unfavorable [@gerber1998].
+
+The potential for MMDs to improve representation turns on a distinction between *Sequential* and *Proportional* ranked-choice voting. In sequential (instant-runoff or block-preferential voting) each seat is filled from the same pool of votes so a cohesive majority sweeps the district; the at-large dynamic that disenfranchised Black voters. Proportional ranked-choice voting, better known as the single transferable vote (STV), instead allocates seats so that each cohesive group wins representatives roughly in proportion to its share of the electorate by reallocating surplus and last-place votes across iterative rounds [@gallagher1991; @gallagher2018]. Under STV the historical logic reverses and as district magnitude rises, the share that guarantees a group a seat falls from a majority in a single-member district toward roughly a third in a two-member district and a quarter in a three-member one. On these grounds Guinier argued for semi-proportional alternatives once majority-minority districting proved a mixed blessing for Black influence [@guinier1993], local U.S. experiments with alternative election rules improved minority representation [@bowler2003], and recent work concludes that multi-member districts could now offer Black voters real gains [@herrnson2020]. Throughout this paper, references to multi-member districts with ranked-choice voting mean proportional RCV (STV).
+
+Because the American record is dated and dominated by at-large cases, the most useful evidence on STV in multi-member districts comes from countries in the Anglo electoral tradition (e.g. Ireland, Australia, New Zealand) where electoral geographers established early that ranked voting in multi-member constituencies yields more proportional outcomes than plurality single-member districts, and that proportionality climbs with district magnitude along a curve that is steep at first and flattens above roughly ten seats [@paddison1976]. The same literature is candid about the limits of the remedy. In Ireland's three- and four-member STV constituencies, regional voting concentrations regularly let the largest party take two of three seats, and a determined boundary-drawer could press that edge further [@paddison1976]. The mitigation MMDs offer is one of degree, not a guarantee. Our findings below support these findings and locate them squarely in the complex relationship between cluster size and district size.
+
+The most direct way to serve all four representation criteria is to reduce the payoff from manipulating district boundaries rather than seek better metrics or trust a 'non-partisan' process. Furthermore, reforms such as non-contiguous districts that stitch distant clusters together [@forest2021] or enlarged legislatures made up of smaller districts [@mitchell2023] leave the underlying vulnerability in place and can even sharpen it. Enlarging districts to elect several representatives instead makes boundary location less consequential, thus diminishing the need for precise metrics of fairness and sidestepping the "reverse gerrymandering" that single-member maps require to reach equitable outcomes for vulnerable groups [@nagle2019].
+
+We favor moderately-sized, multi-member districts with the single transferable vote (STV) over a wholesale move to high-magnitude or party-list proportional representation, for reasons that track the four representational goods. List PR and very large districts close the votes-to-seats gap most completely and let even dispersed groups organize for representation without geographic clustering [@carey2024; @douglas1923; @monroe1995], but they weaken place-based representation [@gallagher2018; @monroe2002], typically move candidate selection from voters to party committees, and complicate coalition-building across broad policy domains [@abramson2010]. STV keeps selection in voters' hands and delivers proportionality through district magnitude, but its costs rise with magnitude: as the candidate field expands, voters find it harder to rank meaningfully [@drutman2020; @reilly2001]. The design problem is therefore choosing a magnitude large enough to make seat shares roughly proportional yet small enough to keep ballots manageable and district geography legible; a low-magnitude sweet spot that secures most of the proportionality gains while preserving accountability and place [@carey2011]. That tradeoff is why recent reform proposals and the cross-state analysis closest to ours converge on three-member STV districts [@drutman2020; @garg2026].
+
+In summary, harm from gerrymandering depends on clustered populations at a scale that alters election outcomes when boundaries change. Moreover, the different metrics and methods used to police districting point toward proportional representation but fail to secure fair maps under a geographically based single-member system. A wholesale switch to proportional representation would help but carries its own costs. A hybrid system of large, multi-member districts with STV, however, blunts the gains from boundary manipulation while retaining place-based representation. It not only improves proportionality but also exerts positive effects on other aspects of representation, such as heterogeneity, competitive elections, and the potential to improve coalition opportunities for clustered and dispersed groups.
+
+A case study of a single state is timely given the high political salience of districting practices, the renewed interest in MMDs, and the lack of contemporary research other than the highly aggregated study by @garg2026. We expect that the interaction among the size and location of population clusters and district scale will yield results that are neither uniform nor predictable. Moreover, administrative rules regarding the division of counties add another dimension to the equation. Pennsylvania makes the complexity vivid. Its smaller clusters and dispersed groups respond to larger districts, much as the general literature predicts for the metrics of heterogeneity and competitiveness. But proportionality and racial equity move erratically as a result of the heavily Black and Democratic population of Philadelphia which forms a cluster large enough and located at the geographic edge of the state to limit the range of possibilities attainable by multi-member districts. The lesson is not that multi-member districts fail but that reformers should exercise caution in advocating the same rule for all states, a region or a particular group across states. Contingency and openness to variability should be the watchwords if multi-member districts become the basis of representation in the U.S.
+
+With that complexity in view, the empirical sections test four claims:
+
+1\. Increasing district size blunts the power of boundary-drawing, raising the heterogeneity of constituencies and narrowing the range of outcomes a map-drawer can engineer.
+
+2\. Multi-member districts larger than current congressional seats can improve partisan proportionality.
+
+3\. Larger districts can expand electoral competition—a dimension overlooked in the multi-member literature.[^2]
+
+4\. Gains for Black voters, whose clustering typically tracks the scale at which it can be exploited, are contingent on the match between district magnitude and cluster scale and location.
+
+[^2]: While most evaluations of districting plans focus on metrics of proportionality, 'competitiveness' is another value frequently identified by voters as a quality that they value in elections. Most congressional and state legislative elections produce lopsided vote tallies, and many have only one candidate on the ballot. Scholars worry about such lack of competition because it decreases accountability to constituents [@sulkin2005; @murphy2009].
+
+## Data
+
+Pennsylvania offers a strong test case for analyzing heterogeneity, proportionality, competition, and racial equity. It has a sizable congressional delegation (17 seats as of 2022), a nearly even partisan split (52%-48% Biden-Trump in 2020; 50%-49% Trump-Harris in 2024), and frequently contested district boundaries. The state includes expansive rural areas, two large cities, several mid-sized cities, and a highly segregated Black population in Philadelphia. These features make it both vulnerable to gerrymandering and representative of conditions in other large- to mid-sized states.
+
+Our analysis uses block, block-group, and tract-level data from the 2020 Decennial Census and the 2016–2020 American Community Survey (ACS) 5-year summary files, accessed through the U.S. Census Bureau [@walker2022]. The primary dataset for which our results are reported includes 10,104 block groups and covers approximately 13 million people. From these data, we calculate population share measures for key demographic groups (Table 1). Variables were selected to reflect vectors of difference tied to federal policy interests: seniors (e.g., Social Security, Medicare), households with children (education funding), manufacturing workers (trade and labor policy), and poor populations (Medicaid). We also include percent Black and BVAP to evaluate the implications of our proposed changes for Black voters.
+
+Voters’ party affiliation is not available to arbitrate between competing district plans, so we follow the literature in using vote totals for the 2020 Presidential race [@buck2022] to infer the political implications of different maps. These data were interpolated from voting districts[^3] to census blocks using target-count weighted interpolation [@schroeder2007; @schroeder2017] and then aggregated to block groups.
+
+[^3]: 'Voting district' is a Census-defined, generic term covering the range of locally-specific identifiers like election district, precinct, and ward that refer to the smallest administrative unit for which election information is tallied.
+
+| ***Variable*** | ***Source*** |
+|--------------------------------------------------|--------------------------------------------------|
+| Percent of population 65 years or older | 2020 Census |
+| Percent of households with child present | 2016-2020 ACS |
+| Percent of workforce in manufacturing | 2016-2020 ACS |
+| Percent of population in poverty | 2016-2020 ACS |
+| Percent of the population that is Black and Black Voting Age Population (BVAP) | 2020 Census[^4] |
+| Count of votes cast for Biden or Trump in 2020 presidential election | 2020 Census geographies 2020 Open Elections vote totals[^5] |
+
+: Table 1: Population variables and their data sources
+
+[^4]: From variable P3_004N "Population of one race:Black or African American Alone" from the "Race for the population 18 years and over." This number includes persons who also identify as ethnically Hispanic or Latino but does not include persons who identify as Black or African American in combination with one or more other races.
+[^5]: Ruth Buck (Penn State) compiled the file from Census Voting District data and Open Elections returns. Section 1 of the supplementary materials documents the provenance and compares it to comparable data from the Voting and Elections Science Team.
+
+## Metrics and Methods
+
+This analysis conforms to best practices in replicable research and this paper from data download through figure creation is generated by a series of scripts that are publicly available via the corresponding author's github site at *redacted*.
+
+### District size and number of representatives
+
+Our primary research question explores the relationship between district size and the population clusters that make gerrymandering an effective partisan strategy. To this end we examine a delegation of 18 representatives divided into 3,6,9, and 18 districts with, respectively, 6,3,2, and 1 representative each. Eighteen representatives is a useful quantity because of the multiple ways it can be equally divided. It is also a near approximation of the 17 representatives currently assigned to Pennsylvania after the 2020 decennial census. For consistency with current allocations we also calculate statistics for the current 17-representative delegation even though this configuration does not divide evenly for the purposes of MMD's. We report values for 18-representative delegations below for comparability, but in no case do the 17 representative plans diverge meaningfully from the 18-representative plans. We retain commented out code in the repository to easily switch between the two comparable delineations. A full combinatorial examination of k districts × n members across many states has recently been undertaken by @garg2026 with a focus on partisan and proportionality outcomes; rather than replicate that grid, we hold the state fixed and use the four configurations to trace how a single clustered geography responds as district scale varies. The magnitudes we select (1, 2, 3, and 6 members per district) span the steep portion of the proportionality–magnitude curve identified in @rae1971, where adding a seat to a district produces the largest marginal change in expected outcomes; the diminishing-returns region above ten members is well-covered in the cross-national literature and would offer little additional purchase on the U.S. case.
+
+### Randomized maps
+
+Our analysis relies on *ensemble* methods, which sample from the space of valid maps so that any one plan can be read against the distribution of alternatives [@mccartan2023; @chen2016; @fifield2020; @deford2021]. Ensembles are typically interpreted through the same proportionality metrics described below, inheriting both their diagnostic power and their limitations [e.g. @duchin2018a].
+
+Maps were created using the `redist` package in R [@kenny2022], with constraints that balance computability with conformance to constitutional requirements for legislative maps in Pennsylvania. We constrain maps to rough population parity (1% population deviation across districts), contiguity, and a preference for not splitting counties and municipalities. This last is enforced in two ways: through a hard constraint on the number of counties split (number of districts - 1), and a soft constraint that prefers plans with fewer county splits. In both cases we also place a soft constraint on splitting municipalities. We retain both ensembles in our main analysis because, it turns out, strict limits on splitting counties significantly change the impact of creating multi-member districts, while weak constraints on splitting counties fail to produce maps that align with enacted plans. The effects of county split constraints extend beyond our Pennsylvania sample: @clelland2022 find that in Colorado, hard county split limits systematically disadvantage Democrats. Soft constraints, meanwhile, may offer less practical discipline than they appear to provide; @herzig2026 show that the presence of soft county split rules in state redistricting statutes are not associated with actual reductions in county splits in enacted congressional maps. Ensemble methods exhibit bias towards more compact plans than a truly random set of district configurations but this bias tends to produce maps that look more like the 'fair' maps that judges and public officials prefer [@kaufman2021]. We provide additional information on the comparability of these maps to enacted plans and to plans generated without these constraints in Sections 2 and 3 of the supplementary materials. We note here for those who might not otherwise examine those materials, that the impact of some of these constraints was more significant than anticipated and suggest the need for further exploration of the impact of parameterization on the outcomes of ensemble methods. 
+
+We enforce no constraint on the creation of VRA compliant districts in our randomized maps. This methodological choice now aligns with current law under the *Callais* decision [@callais2026] and is also in line with conditions in Pennsylvania where a cluster of Black voters exists in Philadelphia that would meet the criteria for size, compactness, and political cohesion set out in *Thornburg v. Gingles* (1986), although the test for racially polarized voting has not been sufficiently demonstrated to make the case that a VRA district would have been required even before *Callais* dismantled the law.
+
+We generated 250,000 maps per scenario using the Sequential Monte Carlo algorithm [@mccartan2023]. We understand these ensemble results to reflect the distribution of maps drawn without intent to achieve some particular partisan or policy goal. While naive within the hyperpartisan free-for-all of current districting practice, these distributions give us a clear view on how changing assumptions about district size and member count shape broad expectations about outcomes.
+
+Because we do operate in a world of hyperpartisan districting we also utilize the functionality built into the redist package to 'optimize' plans based on specific policy and partisan goals. We use the redist_shortburst function, which generates chains of plans selected to maximize a specific criterion. We apply two complementary families of objectives. The first counts total seats won across the plan and produces one optimum plan per scenario for each of: maximum Democratic seats, maximum Republican seats, and maximum number of districts electing a candidate preferred by Black voters. This last condition we consider in two ways: a scenario in which Black voters elect a candidate without a coalition of support, and a scenario in which they elect a candidate with modest coalition support.[^6] These are not true global optima, in the sense that algorithmically we are limited to local maxima and can only find maxima within the spaces that our sampled plans explore. While not true optimizations they achieve two goals: they demonstrate that our ensembles are exploring distributions that include the most extreme plans, and they give a sense of what a motivated map-drawer could achieve under the constraints of differing districting plans. While we focus on our ensemble results in the main text, we offer a further exploration of the optimizing results in section 4 of the supplementary materials.
+
+[^6]: The "without coalition" threshold is a district BVAP share of 1/(seats+1) — that is, Black voting-age population as a fraction of total district voting-age population — the share at which a group can guarantee a seat in a multi-member district of size 'seats'. (This is formally the Droop quota; see the Metrics section below for the seat-counting math used throughout the paper.) The "with coalition" case uses the looser 1/(seats+2) threshold, which a group can reach with modest support from non-group voters. See the information on BVAP thresholds in section 5 of the supplementary materials.
+
+### Metrics
+
+District heterogeneity is not widely used as a measure in the literature on redistricting. For each population measure, we calculate the distance of the district value of the metric from the state average and then use this value to generate a standard deviation for each delineation. The distance from the state measure is simply
+$$dist_{ia} = \left | x_{ia} - x_{a} \right |$$ where *a* is one of the measures being evaluated
+(e.g. Percent 65+), *x~ia~* is the value of *a* for district *i*, and *x~a~* is the value of *a* for the state as a whole. The standard deviation for a plan *j* is then calculated as
+$$SD_{aj}=\sqrt{\frac{\sum_{i}{\left ( dist_{ia}\right )^2}}{n}}$$ where *n* is the number of districts in a given plan. Lower SD indicates more heterogeneous districts and fewer opportunities to advantage or penalize a group through boundary maneuvers.
+
+As noted in the introduction, proportionality is the standard against which districting plans are most often judged; whether by comparing a party's vote share to its seat share directly [@cervas2020; @katz2020] or as a neutral baseline for ranking rival plans [@gelman1994; @mcdonald2015]. No single operationalization has been uniformly accepted by courts or scholars [@duchin2018a]; each encodes different criteria without a clear rationale for choosing among them [@katz2020; @deford2021; @deford2023], and all can be gamed to some degree across the range of electoral configurations found in the U.S. [@duchin2022; @becker2022]. We therefore report several complementary measures rather than relying on any one. For each randomly drawn plan, we calculate the number and share of seats won by Democrats using an assumption for multi-member districts such that:
+$$toWin=\frac{votes}{\left (seats+1 \right )}+1$$
+$$seats_g=floor \left (\frac{votes_g}{toWin}\right )$$ 
+where *votes_g* indicates the number of votes cast for group *g*, *seats_g* the number of seats won by *g*, and *toWin* the minimum votes required for a seat [a.k.a. the Droop quota @cox1997b p. 57].
+
+We calculate an identical measure for the number of seats won by candidates favored by Black voters replacing our counts of voters in group *g* and total voters with the 2020 Census BVAP and VAP, respectively. To manage the role of coalition voting; crucial to the election of candidates preferred by Black voters in Pennsylvania, we use both the standard measure above and also $$toWin=\frac{votes}{\left (seats+2 \right )}+1$$
+yielding the election of candidates preferred by Black voters at 33% BVAP in single-member districts, 25% in two-member districts, etc...
+
+As an additional measure of proportionality, we calculate the efficiency gap proposed by @stephanopoulos2015 to assess how multi-member districts allocate representation to groups within a district. We modify the standard measure to consider wasted votes in the context of districts with varying numbers of representatives. Our measure assigns wasted votes for a group *g* in district *i* such that:
+$$wasted_{gi}=\begin{Bmatrix} \text{if } \left (seats_{gi} = 0 \right ) &  votes_{gi} & \\ \text{otherwise} & votes_{gi}-(seats_{gi}*toWin) & \end{Bmatrix}$$
+All votes are considered wasted if no seats are won; otherwise, any votes cast beyond those needed to win a seat are considered wasted.
+
+Adapting the equation above, we obtain the standard form of the efficiency gap measure for two groups, *d* and *r* below, following @stephanopoulos2015 relative to the total votes cast in an election:
+$$efficiencyGap=\frac{\left ( \sum_iwasted_{di} - \sum_iwasted_{ri} \right )}{\sum_ivotes_i}$$ 
+
+Building on the seat-counting threshold $toWin$ above, we measure competitiveness for district $d$ by computing its Democratic two-party vote share $v_d = votes_{D,d}/(votes_{D,d} + votes_{R,d})$, where $votes_{D,d}$ and $votes_{R,d}$ are the Democratic and Republican presidential vote totals in district $d$ respectively. Each district's distance to the nearest seat-change boundary is
+$$dist_d = \min\bigl(v_d \bmod toWin,\; toWin - (v_d \bmod toWin)\bigr),$$
+the smallest two-party swing that would alter the seat allocation in district $d$. The plan-level summary we report is the count of districts within five percentage points of a boundary, 
+$$n_{\text{marg}} \;=\; \sum_d \mathbb{1}(dist_d < 0.05),$$
+which generalizes the conventional 45%-55% "competitive district" window across magnitudes. For single-member districts ($toWin = 0.5$) this reduces to the textbook marginality measure of @mayhew1974 [@grofman2009; @selb2009].
+
+We also report a continuous probabilistic version. Modeling the two-party swing as Normal(0, $s=0.03$)-- a simplified version of the hypothetical-election framing in @gelman1994 -- the per-district flip probability is $p_d = 2 \cdot \Phi(-dist_d / s)$. We select σ = 0.03 because it approximates a typical off-year swing in Pennsylvania's relatively stable partisan geography and because it is deliberately conservative relative to broader empirical estimates, producing a lower bound on the flip probabilities we report. We report the per-plan average $\bar p = \frac{1}{|D|}\sum_d p_d$, the typical district's likelihood of changing seat allocation under a single normal swing.
+
+Finally, we calculate a series of metrics at the block group level to assess the spatial patterns underlying each metric just described. For each block group, we identify the average district value for a metric across all 250,000 random plans. This allows us to ask how often a given block group is located in a competitive district or how the geography of heterogeneity changes when plans are drawn with three districts instead of seventeen.
+
+Throughout our analysis of MMDs we assume straight-party ranking under STV. Specifically, every voter ranks all candidates from one party above all candidates from the other before exhausting their ballot. Operationally this collapses STV seat allocation to the threshold arithmetic above: each party's share of the two-party vote is divided by $1/(seats+1)$ to produce its seat count. The ability to split rankings across parties is one of STV's substantive attractions [@gallagher2018], but modeling individual ranking behavior across hypothetical candidate combinations exceeds the scope of this paper. The assumption is conservative under Pennsylvania's current near-50/50 two-party split (most cross-party transfers would net out) but it would weaken if viable third parties emerge or if Black-preferred candidates draw significant support from other groups; which is precisely the dynamic the coalition threshold ($1/(seats+2)$) is intended to capture. See @mgggredistrictinglab2023 for a more detailed exploration of cross-party ranking under MMD voting and @garg2026 for a recent simulation-based robustness check across alternative ranking assumptions.
+
+## Results
+
+The analysis confirms that increasing district population thresholds reduces the electoral salience of population clusters. This in turn lowers the potential for partisan gerrymandering. Larger districts also improve competitiveness and the likelihood of a seat changing party. However, proportionality between vote share and seat share does not move linearly with increased district size. This appears to be, in part, a function of constraints on splitting counties but ultimately rests on the specific geography of Pennsylvania where a large Democratic cluster exists in a large county in the corner of the State. For Black voters, multi-member districts can offer gains, but large concentrations, such as those in Philadelphia, remain vulnerable to manipulation.
+
+### Heterogeneity and District Size
+
+@fig-heterogeneity summarizes the key outcome in terms of the standard deviation of districts from the state average by comparing results for plans with 3, 6, 9, and 18 districts. Each panel examines a different characteristic of the residents in a district, such as the population share over sixty-five. Within each panel, box plots show the distribution of SD across 250,000 simulations for plans with different numbers of districts. An SD of zero represents a plan in which all districts are exactly equal to the state average for a statistic and thus the role of population clusters is minimized. Narrower ranges for boxplots signify a reduced range across random maps meaning that differences in boundary placement impact measures less.
+
+Comparing box plots within the same panel reveals that plans with fewer districts tend to better reflect the population of the state (lower SD) than plans with more districts. Comparing across panels, some metrics are heterogeneous regardless of how many districts appear in a plan, for example in @fig-heterogeneity top row. For other metrics, particularly "Percent of the Population that is Black" and "Democratic Vote Share," the SD is much higher and the range across plans with the same number of districts can be larger. This latter condition provides a sense of how vulnerable a particular population is to gerrymandering given that a lower SD and narrower interquartile range is less susceptible to manipulation. For example, the SD for "Population over Sixty-Five" is typically around 2.3% in an eighteen-district plan, but only 1.9% in a typical three-district plan. In contrast, the SD is typically around 16% for "Democratic Vote Share" in an eighteen-district plan and 13.5% in a three-district plan.
+
+```{r, fig.height=4.9, fig.width=6.5}
+#| label: fig-heterogeneity
+#| fig-cap: "Standard Deviation (SD) of districts from state Average for key demographic and political variables by number of districts. Shaded area of boxplots represents the interquartile range(IQR). Horizontal lines are the median of the distribution and whiskers extend out to 1.5x IQR."
+#| cache: false
+variable_names<-c(
+  "PctBlack" = "Pct. Black",
+  "Pct65Plus" ="Pct. 65+",
+  "PctManufacturing"="Pct. Emp.in Manufacturing",
+  "PctHHwChild"="Pct. HH's with Children",
+  "PctPoverty"="Pct. HH's in Poverty",
+  "ShareDem"="Dem. Vote Share")
+het_plot <- heterogeneity %>% filter(!grepl("Fifty", as.character(Type)))
+#Row 1 Standard deviation of key variables with low SD
+fig_r1<-het_plot[het_plot$Metric %in% c("Pct65Plus","PctHHwChild","PctManufacturing"),] %>%
+ggplot(aes(x=Type,y=Value,fill=Type))+geom_boxplot(outlier.shape = NA)+
+  facet_wrap(~Metric,nrow=1,labeller=labeller(Metric=variable_names))+
+  theme(legend.position="none",
+        text = element_text(color = "#22211d",size = 13),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  scale_fill_brewer(palette = "Set2" )+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  ylab("")
+#Row 2 Standard deviation of key variables with high SD
+fig_r2<-het_plot[het_plot$Metric %in% c("PctPoverty","PctBlack","ShareDem"),] %>%
+ggplot(aes(x=Type,y=Value,fill=Type))+geom_boxplot(outlier.shape = NA)+
+  facet_wrap(~Metric,nrow=1,labeller=labeller(Metric=variable_names))+
+  theme(
+        #legend.position="none",
+        legend.position="bottom",
+        text = element_text(color = "#22211d",size = 13),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+  scale_fill_brewer(palette = "Set2", labels = function(x) gsub("Districts", "", x))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  ylab("")+
+  guides(fill = guide_legend(title = "No. of Districts"))
+
+figure1 <- ggarrange(fig_r1,fig_r2,
+                    ncol = 1, nrow = 2)
+annotate_figure(figure1, left = textGrob("Standard Deviation from State Average", rot = 90, vjust = 1, gp = gpar(cex = 1)))
+```
+
+@fig-heterogeneity tells two important stories: 1) that clusters impact population share between districts less when districts are larger; and 2) that the capacity to gerrymander districts is driven by the ability to pack or distribute Black, or Democratic voters. First, these patterns arise across all variables; the *SD* is lower when there are fewer districts. If we accept that heterogeneity (the absence of cluster-driven variation in group share) is positive for representation, then decreasing the number of districts will increase the heterogeneity of constituencies in any given district across a range of population characteristics.
+
+Second, the greatest variation across plans arises for populations that are Black or Democratic. In comparison, the share of seniors, people employed in manufacturing, and households with children nearly matches the state average no matter where district boundaries are drawn or how many districts are created. The contrast is based on clustering; only when a population is spatially concentrated at a scale comparable to a district can boundary placement materially shift its share across districts. Whether a cluster is leveraged to a group's advantage or to its detriment depends on who draws the map and to what end. The high *SD* values in @fig-heterogeneity record the magnitude of effect, not the direction in which the choice actually runs. Dispersed populations are immune to these manipulations in either direction. Their share of any district is fixed by their statewide distribution; a sufficiently large dispersed group can still clear a representation threshold in every district, but it does so by virtue of group size, and no boundary choice can either confer that representation or take it away. Smaller dispersed groups such as manufacturing workers cannot use districting to translate size into direct representation because there is no cluster to elevate above a threshold by packing it. The capacity to have representation manipulated is therefore two-sided for clustered groups and absent for dispersed ones; it is a property of the *interaction* between geography and boundary choice, not a fixed attribute of a population.
+
+```{r,fig.height=6.5, fig.width=6.5}
+#| label: fig-het-map
+#| fig-cap: "Census block group experience for six-district and eighteen-district simulations."
+#| cache: false
+
+fig_cache <- "./Output Data/figure_cache/fig_het_map.png"
+
+if(!file.exists(fig_cache)){
+  dir.create(dirname(fig_cache), showWarnings = FALSE, recursive = TRUE)
+state_bvap_share <- sum(bgs$sum_BVAP, na.rm = TRUE) / sum(bgs$sum_VAP, na.rm = TRUE)
+t_comp$BlackShareSD_6  <- abs(t_comp$BlackShare_6  - state_bvap_share)
+#t_comp$BlackShareSD_17 <- abs(t_comp$BlackShare_17 - state_bvap_share)
+t_comp$BlackShareSD_18 <- abs(t_comp$BlackShare_18 - state_bvap_share)
+
+bks <- c(0, 0.01, 0.025, 0.05, 0.10, 0.20, 1.0)
+lbs <- c('<1%', '1%-2.5%', '2.5%-5%', '5%-10%', '10%-20%', '20%+')
+cols <- brewer.pal(name = "PuBu", n = 6)
+t_comp$SeniorsSD_6_cut       <- cut(t_comp$SeniorsSD_6,       bks, labels = lbs, include.lowest = TRUE)
+#Original 17-district cuts:
+#t_comp$SeniorsSD_17_cut      <- cut(t_comp$SeniorsSD_17,      bks, labels = lbs, include.lowest = TRUE)
+#t_comp$BlackShareSD_17_cut   <- cut(t_comp$BlackShareSD_17,   bks, labels = lbs, include.lowest = TRUE)
+t_comp$SeniorsSD_18_cut      <- cut(t_comp$SeniorsSD_18,      bks, labels = lbs, include.lowest = TRUE)
+t_comp$BlackShareSD_6_cut    <- cut(t_comp$BlackShareSD_6,    bks, labels = lbs, include.lowest = TRUE)
+t_comp$BlackShareSD_18_cut   <- cut(t_comp$BlackShareSD_18,   bks, labels = lbs, include.lowest = TRUE)
+#Make a map of heterogeneity and extract legend
+#Original used BlackShareSD_17_cut to drive the legend.
+#leg<-ggplot(t_comp[!is.na(t_comp$BlackShareSD_17_cut),])+
+#  geom_sf(aes(fill=BlackShareSD_17_cut),color=NA)+
+#  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_17_cut))+
+leg<-ggplot(t_comp[!is.na(t_comp$BlackShareSD_18_cut),])+
+  geom_sf(aes(fill=BlackShareSD_18_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_18_cut))+
+  theme_void()+
+  theme(legend.position="bottom",legend.title=element_text(hjust=.5))+
+  guides(fill=guide_legend(title="Average Absolute Distance from State Average",title.position = 'top',nrow = 1))
+#extract legend from leg
+leg<-cowplot::get_plot_component(leg, 'guide-box-bottom', return_all = TRUE)
+pa<-st_union(t_comp)
+#Original 17-district seniors panel:
+#s17<-ggplot(t_comp)+
+#  geom_sf(aes(fill=SeniorsSD_17_cut),color=NA)+
+#  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_17_cut))+
+#  geom_sf(data=pa,color="darkgrey",fill=NA)+
+#  theme_void()+
+#  theme(legend.position="none",
+#        axis.title = element_text(),
+#        axis.title.y = element_text(angle=90),
+#        axis.title.x = element_blank()) +
+#  ylab("Seventeen-district plans")
+s18<-ggplot(t_comp)+
+  geom_sf(aes(fill=SeniorsSD_18_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  theme(legend.position="none",
+        axis.title = element_text(),
+        axis.title.y = element_text(angle=90),
+        axis.title.x = element_blank()) +
+  ylab("Eighteen-district plans")
+#Make a second map that uses SeniorsSD_6_cut
+s6<-ggplot(t_comp)+
+  geom_sf(aes(fill=SeniorsSD_6_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  theme(legend.position = "none",
+        axis.title = element_text(),
+        axis.title.y = element_text(angle=90))+
+  ylab("Six-district plans")+xlab("Population over 65")
+#Original 17-district Black-share panel:
+#b17<-ggplot(t_comp)+
+#  geom_sf(aes(fill=BlackShareSD_17_cut),color=NA)+
+#  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_17_cut))+
+#  geom_sf(data=pa,color="darkgrey",fill=NA)+
+#  theme_void()+
+#  theme(legend.position="none")
+b18<-ggplot(t_comp)+
+  geom_sf(aes(fill=BlackShareSD_18_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  theme(legend.position="none")
+#4th map is black share 6
+b6<-ggplot(t_comp)+
+  geom_sf(aes(fill=BlackShareSD_6_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$BlackShareSD_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  theme(legend.position = "none",
+        axis.title = element_text(), axis.title.y = element_blank()) +
+  xlab('Black Voting-Age Population Share')
+#Original arrangement used the 17-district maps in the top row.
+#ggarrange(ggarrange(s17,b17), ggarrange(s6,b6), leg, nrow=3, heights=c(1,1,.2))
+  fig_obj <- ggarrange(
+    ggarrange(s18,b18),
+    ggarrange(s6,b6),
+    leg,
+    nrow=3,
+    heights=c(1,1,.2))
+
+  grDevices::png(fig_cache, width = 6.5, height = 6.5, units = "in",
+                 res = 300, type = "cairo")
+  print(fig_obj)
+  dev.off()
+}
+show_cached_fig(fig_cache)
+```
+
+@fig-het-map shows per-BG distances from the state mean across plans, separately for seniors and Black population share at six- and eighteen-district scales. The six-district reduction in *dist~ia~* is sharpest for seniors: most of the state collapses to within 1-2% of the state average. Black population share contracts less dramatically because the underlying population is concentrated in Pittsburgh and the Southeast, especially Philadelphia, and even six-district-scale boundaries are not large enough to dilute that concentration. Philadelphia anchors a persistent high-distance cluster in both metrics, both because its demographic profile (lower senior share, much higher Black share) diverges from the rest of the state and because its southeastern-corner location forces districts to extend north and west from the City, locking in similar boundary configurations across plans. The pattern echoes @rodden2022 on PA's spatial structure; larger districts reduce but do not eliminate the impact of historic development patterns.
+
+### Proportionality and Representation
+
+@fig-eg-wv shows a complex back and forth of partisan advantage as well as a significant role played by the constitutional requirement to minimize county splits. Under the main ensemble (green), which caps the number of county splits (number of districts-1), the relationship between district magnitude and partisan outcomes is not linear. Eighteen-district plans have a median near zero efficiency gap, approach proportional representation but waste Democratic votes with some regularity. Nine-district plans are similar in that they have a median vote share near proportionality, though the distribution shifts sharply toward wasted Republican votes. Six-district plans lean Democratic rather than converging toward proportionality as @garg2026 suggested. Notably, @garg2026 impose no limitations on county splits; had they incorporated the kinds of administrative-boundary constraints that PA redistricting requires, their fifty-state results might exhibit some of the same non-linear patterns we document here. Three-district plans sit squarely at proportion with a consistent, but small waste of Democratic votes.
+
+The explanation runs parallel to the cluster-size mechanism developed above. Just as the match between the spatial concentration of voters and district magnitude determines how efficiently those voters translate into seats, the match between county size and district magnitude determines how the county-split constraint binds and which communities end up grouped together as a consequence. Pennsylvania's counties are highly heterogeneous in population; a small number of large counties coexist with many small ones, and under a structural cap the large counties anchor entire districts while the small counties are aggregated in combinations that depend heavily on how many splits the cap permits. At eighteen districts, seventeen splits closely approximate the enacted boundary regime and the result approaches proportionality; at six, only five splits are available and the specific county-grouping geometry that results produces a distinct partisan lean. This outcome is not a general property of three-member districts but of Pennsylvania's particular county-size distribution interacting with a particular cap.
+
+The soft-penalty ensemble (orange) makes this point by contrast. Without the hard cap on the number of county splits, a pattern more consistent with the cluster-size prediction emerges: eighteen-district configurations waste Democratic votes and favor Republicans, with eighteen-district plans the most distant from proportional representation; nine-district plans favor Democrats and waste Republican votes but the median plan moves slightly towards greater proportionality; six-district plans waste some Democratic votes (sometimes many) but the median plan remains close to proportionality; and three-district plans are straightforwardly proportional. The contrast between ensembles isolates the county-structure effect: the county constraint operates on top of and separately from the underlying geographic mechanism, and because the number and size distribution of counties varies substantially across states, the effects of an equivalent 'number of districts − 1' rule will be qualitatively different elsewhere. Simple claims about multi-member districts and proportionality cannot abstract away from the administrative-boundary regime within which those districts are drawn. The partisan effects we document are consistent with findings from other states. @clelland2022 demonstrate that county split limits in Colorado systematically disadvantaged Democrats — a product of the geographic mismatch between county lines and voter clusters that operates through the same mechanism we identify here.
+
+```{r,fig.height=6.5, fig.width=6.5}
+#| label: fig-eg-wv
+#| fig-cap: "Paired boxplots compare the main ensemble (with hard county split constraint) with the soft constraint ensemble for each delineation. Upper: Partisan Efficiency Gap (positive value waste Democratic votes). Lower: Democratic Seat Share. Up-/down-triangles mark the highest/lowest Democratic seat share reachable by a partisan map-drawer."
+#| cache: false
+ demVoteShare<-t_comp[,c('sum_biden','sum_trump')]%>%
+   st_drop_geometry()%>%
+   colSums()
+ demVoteShare<-as.numeric(demVoteShare[1]/sum(demVoteShare))
+
+ eg_cc <- local({ load("./Output Data/eg_bg_county_cousub.Rdata"); eg })
+ ens_levels <- c("Main (hard constraint)", "Soft split constraint")
+ eg2 <- bind_rows(
+   eg    %>% mutate(ensemble = ens_levels[1]),
+   eg_cc %>% mutate(ensemble = ens_levels[2])
+ ) %>%
+   select(Type, ShareDemSeats, WastedVotes, ensemble) %>%
+   #Original: showed 17-district plan, excluded 18.
+   #filter(Type !="Eighteen Districts")%>%
+   filter(!Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+   pivot_longer(cols = c(ShareDemSeats, WastedVotes),
+                names_to = "Variable", values_to = "Value") %>%
+   mutate(Variable = factor(Variable, levels = c("WastedVotes","ShareDemSeats")),
+          ensemble = factor(ensemble, levels = ens_levels))
+
+#Shortburst partisan optima
+sb_partisan <- sb_overlay %>%
+  filter(ensemble %in% c("ccstruct_m5", "county_cousub"),
+         target %in% c("dem_seats_max", "rep_seats_max"),
+         !Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  mutate(ensemble = factor(ifelse(ensemble == "ccstruct_m5",
+                                  ens_levels[1], ens_levels[2]), levels = ens_levels),
+         target_label = factor(
+           ifelse(target == "dem_seats_max", "Max Dem Seats", "Max Rep Seats"),
+           levels = c("Max Dem Seats", "Max Rep Seats"))) %>%
+  select(Type, ensemble, target_label, ShareDemSeats)
+
+dodge <- position_dodge(width = 0.8)
+
+eg.plot <- ggplot(eg2[eg2$Variable=="WastedVotes",],
+                  aes(x = Type, y = Value, fill = ensemble)) +
+  geom_boxplot(outlier.shape = NA, position = dodge) +
+  scale_fill_brewer(palette = "Set2") +
+  guides(fill = "none") +
+  ylab("Efficiency Gap") +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
+ds.plot <- ggplot(eg2[eg2$Variable=="ShareDemSeats",],
+                  aes(x = Type, y = Value, fill = ensemble)) +
+  geom_boxplot(outlier.shape = NA, position = dodge) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_continuous(limits = c(0,1.05)) +
+  scale_x_discrete(labels = function(x) gsub(" Districts", "", x)) +
+  ylab("Democratic Seat Share") +
+  xlab("Districts") +
+  geom_hline(yintercept = demVoteShare, color = 'darkgrey', linetype = "dashed") +
+  annotate("text", x = 3.55, y = demVoteShare + .05, label = "Democratic Vote Share", hjust = 0, size = 4) +
+  geom_point(data = sb_partisan,
+             aes(x = Type, y = ShareDemSeats, shape = target_label, group = ensemble),
+             fill = "gold", color = "black", size = 3,
+             position = dodge, inherit.aes = FALSE) +
+  scale_shape_manual(values = c("Max Dem Seats" = 24, "Max Rep Seats" = 25),
+                     name = NULL) +
+  guides(fill = guide_legend(title = NULL, order = 1),
+         shape = guide_legend(order = 2)) +
+  theme(legend.position = "bottom")
+gA <- ggplotGrob(eg.plot)
+gB <- ggplotGrob(ds.plot)
+grid::grid.newpage()
+grid::grid.draw(rbind(gA, gB))
+```
+
+Further, examination of the spatial pattern of wasted votes reveals the impact of moving from an eighteen- to a six-district plan more clearly. @fig-waste-map shows the average wasted votes by block group. Block groups for which advantage in terms of wasted votes shifts from plan to plan will approximate zero. The brighter colors occur, therefore, only in places where wasted votes always lean strongly in one direction. For the eighteen-district plan, the brighter colors indicate that there are many places where the average wasted vote is quite high. Republican votes, for example, are consistently wasted in the Philadelphia suburbs and the Pittsburgh metropolitan areas, whereas Democratic votes are consistently wasted in the Northeastern and Northwestern quadrants of the state. The six-district plan reveals relatively few wasted votes statewide though a Democratic lean (wasted Republican votes) still exists in the West, especially outside of Pittsburgh and the reverse is true in the Northeast. Notably, the characteristics that drove the wide IQR for six-district plans in @fig-eg-wv (big shifts depending on how the Philadelphia-area district was drawn) produce relatively low average wasted votes here--while unbalanced plans can be drawn for this region, they do not consistently favor one party.
+
+```{r,fig.height=6.5, fig.width=6.5}
+#| label: fig-waste-map
+#| fig-cap: "Average Wasted Votes for block groups in six-district and eighteen-district delineations."
+#| cache: false
+
+fig_cache <- "./Output Data/figure_cache/fig_waste_map.png"
+if(!file.exists(fig_cache)){
+  dir.create(dirname(fig_cache), showWarnings = FALSE, recursive = TRUE)
+  if(!exists("pa")) pa <- st_union(t_comp)
+
+#Original used Wasted_17 / w17 to compare against the six-district plan.
+#Switched to Wasted_18 below; original line(s) commented to make the
+#swap easy to roll back.
+#raw  <- c(t_comp$Wasted_17, t_comp$Wasted_6)
+raw  <- c(t_comp$Wasted_18, t_comp$Wasted_6)
+bks  <- c(-Inf, -0.20, -0.10, -0.05, 0.05, 0.10, 0.20, Inf)
+lbs  <- c("R wasted >20%", "R wasted 10-20%", "R wasted 5-10%",
+          "balanced (\u00B15%)",
+          "D wasted 5-10%", "D wasted 10-20%", "D wasted >20%")
+cols <- brewer.pal(name = "RdBu", n = 7)   # red = R wasted, blue = D wasted
+
+cut_vec <- cut(raw, bks, labels = lbs, include.lowest = TRUE)
+#t_comp$Wasted_17_cut <- cut_vec[1:nrow(t_comp)]
+t_comp$Wasted_18_cut <- cut_vec[1:nrow(t_comp)]
+t_comp$Wasted_6_cut  <- cut_vec[(nrow(t_comp)+1):(2*nrow(t_comp))]
+#Make a map and extract legend
+#leg<-ggplot(t_comp[!is.na(t_comp$Wasted_17_cut),])+
+#  geom_sf(aes(fill=Wasted_17_cut),color=NA)+
+#  scale_fill_manual(values=cols,breaks=levels(t_comp$Wasted_17_cut))+
+leg<-ggplot(t_comp[!is.na(t_comp$Wasted_18_cut),])+
+  geom_sf(aes(fill=Wasted_18_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$Wasted_18_cut))+
+  theme_void()+
+  theme(legend.position="bottom",legend.title=element_text(hjust=.5))+
+  guides(fill=guide_legend(title="Average wasted votes ((D - R) / total) per BG",title.position = 'top',nrow=1))
+#extract legend from leg
+leg<-cowplot::get_plot_component(leg, 'guide-box-bottom', return_all = TRUE)
+#Original 17-district panel commented out below; new 18-district panel below it.
+#w17<-ggplot(t_comp)+
+#  geom_sf(aes(fill=Wasted_17_cut),color=NA)+
+#  scale_fill_manual(values=cols,breaks=levels(t_comp$Wasted_17_cut))+
+#  geom_sf(data=pa,color="darkgrey",fill=NA)+
+#  theme_void()+
+#  labs(title="17 District Plans")+
+#  theme(legend.position="none")
+w18<-ggplot(t_comp)+
+  geom_sf(aes(fill=Wasted_18_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$Wasted_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  labs(title="18 District Plans")+
+  theme(legend.position="none")
+#Make a second map that uses Wasted_6_cut
+w6<-ggplot(t_comp)+
+  geom_sf(aes(fill=Wasted_6_cut),color=NA)+
+  scale_fill_manual(values=cols,breaks=levels(t_comp$Wasted_18_cut))+
+  geom_sf(data=pa,color="darkgrey",fill=NA)+
+  theme_void()+
+  labs(title="6 District Plans")+
+  theme(legend.position = "none")
+#now combine the 18- and 6-district maps into a single figure
+#ggarrange(w17,w6,leg,ncol=1,nrow=3,heights=c(1,1,0.25))
+  fig_obj <- ggarrange(w18,w6,leg,ncol=1,nrow=3,heights=c(1,1,0.25))
+  grDevices::png(fig_cache, width = 6.5, height = 6.5, units = "in",
+                 res = 300, type = "cairo")
+  print(fig_obj)
+  dev.off()
+}
+show_cached_fig(fig_cache)
+```
+
+### Competitive Districts
+
+We examine how different plans vary in producing competitive districts. @fig-cd-box reports this in two normalized-per-district forms so configurations are directly comparable. The top panel shows the share of districts in each plan that sit within five percentage points of a boundary (the direct generalization of the 45-55% window). The bottom panel shows the per-district likelihood of a seat change under 'typical' shifts in vote share (std. dev. 3%). Triangles denote the most competitive plan in each delineation identified through shortburst optimization.
+
+```{r, fig.height=6.5, fig.width=6.5}
+#| label: fig-cd-box
+#| fig-cap: "Top: share of districts in a plan within five percentage points of a seat-change boundary. Bottom: the per-district likelihood of experiencing a seat change under a normal inter-election swing. Gold triangles mark the maximum reached by shortburst optimization."
+#| cache: false
+
+ndists_map <- c("Three Districts" = 3, "Six Districts" = 6,
+                "Nine Districts"  = 9, "Seventeen Districts" = 17,
+                "Eighteen Districts" = 18)
+cd_data <- eg %>%
+  filter(!Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  mutate(n_ds           = ndists_map[as.character(Type)],
+         share_marginal = n_marginal_5pt / n_ds,
+         flip_prob      = prob_seat_change_sigma3)
+
+#Shortburst maxima for both panels under county+cousub constraints.
+sb_marg <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target   == "marg5pt_max",
+         !Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  select(Type, share_marginal) %>%
+  mutate(marker = "Shortburst max")
+
+sb_flip <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target   == "flipprob_max",
+         !Type %in% c("Seventeen Districts", "Fifty Districts")) %>%
+  select(Type, prob_seat_change_sigma3) %>%
+  mutate(marker = "Shortburst max")
+
+cd_shape_scale <- scale_shape_manual(
+  values = c("Shortburst max" = 24),
+  name   = NULL)
+
+marg.plot <- ggplot(cd_data, aes(x = Type, y = share_marginal, fill = Type)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(data = sb_marg, aes(x = Type, y = share_marginal, shape = marker),
+             fill = "gold", color = "black", size = 3.5, inherit.aes = FALSE) +
+  scale_fill_brewer(palette = "Set2") +
+  cd_shape_scale +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, 1)) +
+  guides(fill = "none") +
+  ylab("Share of districts within 5pp of seat change") +
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
+        legend.position = "bottom")
+
+prob.plot <- ggplot(cd_data, aes(x = Type, y = flip_prob, fill = Type)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(data = sb_flip, aes(x = Type, y = prob_seat_change_sigma3, shape = marker),
+             fill = "gold", color = "black", size = 3.5, inherit.aes = FALSE) +
+  scale_fill_brewer(palette = "Set2") +
+  cd_shape_scale +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1),
+                     limits = c(0, 1)) +
+  scale_x_discrete(labels = function(x) gsub(" Districts", "", x)) +
+  guides(fill = "none") +
+  ylab("Per-district likelihood of seat change") +
+  xlab("Districts") +
+  theme(legend.position = "bottom")
+
+ggarrange(marg.plot, prob.plot, ncol = 1, common.legend = TRUE, legend = "bottom")
+```
+
+@fig-cd-box tells the same story two ways: plans with fewer, larger districts put a higher share of districts within a swing-distance of a seat change. Three-district plans create competitive districts most of the time as do six-district plans. Under the median six-district plan, a 3-percentage-point statewide swing is expected to change the seat allocation in about fifteen percent of districts although a motivated map could raise this figure to about thirty-five percent. Competitiveness is much lower in eighteen-district plans: only about a quarter of districts are within five points of a seat change and a typical plan puts only about five percent of seats in play. Unlike proportionality where we had a non-linear relationship between district size and desired outcomes, competitiveness clearly improves with district size.
+
+@fig-cd shows the average probability that a block group is in a district that shifts given expectations for shifts in vote share. Consistent with @fig-cd-box, which shows rising probabilities of a district shifting with increased district size, we see darker colors (higher shift probabilities) with multi-member districts. Notably every block group shifts some of the time in the multi-member delineations, while northwest and central Pennsylvania never shift under the eighteen-district plans. However, the patterns are highly complex. Philadelphia resists switching in the three-district plans, but parts of the metropolitan area are highly susceptible to switching in the nine- and six- district plans. The region just north of Philadelphia is the most likely to switch in eighteen-district plans, while that designation goes to the southwest corner of the state in six-district plans. While the boxplots in @fig-cd-box tell a story of consistent improvement in competitiveness with increased district size, the spatial footprint of that improvement is uneven.
+
+```{r,fig.height=6.5, fig.width=6.5,fig.pos="H"}
+#| label: fig-cd
+#| fig-cap: "Per-block-group expected probability of being in a flipped district under normally distributed +/- 3% change in vote share."
+#| cache: false
+
+fig_cache <- "./Output Data/figure_cache/fig_cd.png"
+if(!file.exists(fig_cache)){
+  dir.create(dirname(fig_cache), showWarnings = FALSE, recursive = TRUE)
+c_c <- paste0("FlipProb_", c(3, 6, 9, 18))
+
+flip_breaks <- c(-1e-5, .001, .02, .06, .10, .20, .40, .70, 1)
+flip_labels <- c("~0%","<2%","2-6%","6-10%","10-20%","20-40%","40-70%","70%+")
+flip_colors <- c("~0%"     = "#FFFFE5", "<2%"    = "#F7FCB9",
+                 "2-6%"    = "#D9F0A3", "6-10%"  = "#ADDD8E",
+                 "10-20%"  = "#78C679", "20-40%" = "#41AB5D",
+                 "40-70%"  = "#238443", "70%+"   = "#005A32")
+comp <- st_drop_geometry(t_comp)[, c_c, drop = FALSE]
+comp[] <- lapply(comp, function(x){
+  factor(cut(x, breaks = flip_breaks, labels = flip_labels,
+             include.lowest = TRUE),
+         levels = flip_labels)
+})
+comp <- st_set_geometry(x = comp, value = st_geometry(t_comp))
+
+flip_scale <- function() scale_fill_manual(values    = flip_colors,
+                                            limits    = flip_labels,
+                                            breaks    = flip_labels,
+                                            drop      = FALSE,
+                                            na.value  = "grey85")
+
+#Build the legend off a tiny dummy frame that explicitly contains every
+#level, so guide_legend cannot drop a key
+.dummy_legend <- data.frame(lvl = factor(flip_labels, levels = flip_labels))
+leg <- ggplot(.dummy_legend, aes(x = lvl, y = 1, fill = lvl)) +
+  geom_tile() +
+  flip_scale() +
+  theme_void() +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  guides(fill = guide_legend(nrow = 1))
+leg <- cowplot::get_legend(leg)
+c3  <- ggplot() + geom_sf(data = comp, aes(fill = FlipProb_3),  color = NA) +
+  flip_scale() + theme_void() +
+  theme(legend.position = "none") + ggtitle("Three-district plans")
+c6  <- ggplot() + geom_sf(data = comp, aes(fill = FlipProb_6),  color = NA) +
+  flip_scale() + theme_void() +
+  theme(legend.position = "none") + ggtitle("Six-district plans")
+c9  <- ggplot() + geom_sf(data = comp, aes(fill = FlipProb_9),  color = NA) +
+  flip_scale() + theme_void() +
+  theme(legend.position = "none") + ggtitle("Nine-district plans")
+c18 <- ggplot() + geom_sf(data = comp, aes(fill = FlipProb_18), color = NA) +
+  flip_scale() + theme_void() +
+  theme(legend.position = "none") + ggtitle("Eighteen-district plans")
+  fig_obj <- ggarrange(
+      ggarrange(c18, c9),
+      ggarrange(c6,  c3),
+      leg,
+      nrow = 3,
+      heights = c(1, 1, 0.2))
+  grDevices::png(fig_cache, width = 6.5, height = 6.5, units = "in",
+                 res = 300, type = "cairo")
+  print(fig_obj)
+  dev.off()
+}
+show_cached_fig(fig_cache)
+```
+
+### Black Voters
+
+Black voters are particularly vulnerable to gerrymandering (@fig-heterogeneity) because the population is clustered in PA. Our proposal for larger, heterogeneous districts is not sufficient to erase this clustering effect, but @fig-bw-bs demonstrates that larger multi-member districts could have advantages for representation. @fig-bw-bs shows that the average plan in all of the multi-member delineations produces an expected seat for a candidate preferred by Black voters independent of votes from other groups, an outcome only achieved as an outlier in the eighteen-district plans. Using loosened constraints that expect coalition voting in support of candidates preferred by Black voters (bottom panel @fig-bw-bs) the advantage of larger districts is not as clear. Eighteen-district plans regularly find two coalition seats, whereas multi-member delineations found this solution only as a result of targeted optimization.
+
+```{r,fig.height=5, fig.width=6.5,fig.pos="H"}
+#| label: fig-bw-bs
+#| fig-cap: "Predicted seats won by Black-preferred candidates across simulated plans. Top: Standard threshold. Bottom: Coalition threshold. Gold up-triangles mark the maximum seats reached by shortburst optimization"
+#| cache: false
+eg2<-eg %>%
+  select(Type,BlackSeats,BlackSeats37) %>%
+  #Original: kept Seventeen Districts in.
+  #filter(Type != "Fifty Districts")
+  filter(!Type %in% c("Fifty Districts", "Seventeen Districts"))
+#Shortburst maxima for both panels under the combined county+cousub
+#preservation constraints.
+sb_droop <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target   == "black_seats_max",
+         !Type %in% c("Fifty Districts", "Seventeen Districts")) %>%
+  select(Type, BlackSeats) %>%
+  mutate(marker = "Shortburst max")
+
+sb_coal <- sb_overlay %>%
+  filter(ensemble == "ccstruct_m5",
+         target   == "black_seats37_max",
+         !Type %in% c("Fifty Districts", "Seventeen Districts")) %>%
+  select(Type, BlackSeats37) %>%
+  mutate(marker = "Shortburst max")
+
+y_max <- max(c(eg2$BlackSeats, eg2$BlackSeats37,
+               sb_droop$BlackSeats, sb_coal$BlackSeats37), na.rm = TRUE)
+y_max <- ceiling(y_max) + 0.5
+
+shape_scale <- scale_shape_manual(
+  values = c("Shortburst max" = 24),
+  name   = NULL)
+
+bs<-ggplot(eg2,aes(x=Type,y=BlackSeats,fill=Type))+
+  geom_boxplot()+
+  geom_point(data=sb_droop,aes(x=Type,y=BlackSeats,shape=marker),
+             fill="gold",color="black",size=3.5,inherit.aes=FALSE)+
+  scale_fill_brewer(palette = "Set2")+
+  shape_scale+
+  scale_y_continuous(limits = c(0, y_max))+
+  guides(fill="none")+
+  ylab("Seats Won (Droop)")+
+  theme(axis.text.x=element_blank(),axis.title.x = element_blank(),
+        legend.position = "bottom")
+bs37<-ggplot(eg2,aes(x=Type,y=BlackSeats37,fill=Type))+
+  geom_boxplot()+
+  geom_point(data=sb_coal,aes(x=Type,y=BlackSeats37,shape=marker),
+             fill="gold",color="black",size=3.5,inherit.aes=FALSE)+
+  scale_fill_brewer(palette = "Set2")+
+  shape_scale+
+  scale_y_continuous(limits = c(0, y_max))+
+  guides(fill="none")+
+  ylab("Seats Won (Coalition)")+
+  xlab("No. of Districts")+
+  scale_x_discrete(labels = function(x) gsub(" Districts", "", x))+
+  theme(legend.position = "bottom")
+ggarrange(bs, bs37, ncol = 1, common.legend = TRUE, legend = "bottom")
+```
+
+### Conclusion
+
+This analysis demonstrates that introducing multi-member districts in Pennsylvania yields substantial benefits: greater heterogeneity within districts and improved competitiveness, but benefits for Black voters are less assured. The results for proportionality are more complex; highlighting the role that administrative boundaries and cluster size play in shaping outcomes for representation.
+
+While many districts contain a mix of constituents with shared policy concerns--seniors, families with children, the working poor--district-level vulnerability often stems from clustering. Large clusters of Democratic, or Black voters are especially susceptible to boundary manipulation. Increasing district size limits these effects across most of the state, though highly segregated areas like Philadelphia remain a challenge.
+
+Contrary to conventional wisdom, Democrats are not structurally disadvantaged by districting; rather it is the match between cluster scale and district scale that shapes outcomes. Current 17- and 18-district plans yield bias in favor of Republicans; nine- and six-district plans produce advantages for Democrats and only three-district plans produce outcomes near proportional representation. Multi-member districts broadly move outcomes towards proportionality [@garg2026], but motivated map drawing and the complexities of geography mean that these benefits are far from guaranteed.
+
+Multi-member districts substantially expand electoral competitiveness. Pennsylvania currently sees few competitive seats despite its evenly divided electorate; at the eighteen-district scale the typical district sits at a mere 5% chance of shifting parties under typical inter-election swings in vote share. Larger districts shrink that buffer. In the median six-district plan the number more than doubles, and a three-district plan sees two-thirds of districts within 5% of a seat change. Although a motivated map-drawer could almost push an eighteen-district plan toward the competitiveness of a typical six-district map, the underlying likelihood of a competitive seat rises sharply with district size. That shift means stronger incentives for candidates to respond to diverse constituencies.
+
+Importantly, these gains come without abandoning the tradition of geographic representation or requiring perfect fairness metrics. Multi-member districts dilute the power of spatial sorting and reduce the stakes of district boundaries. They lessen the need for both partisan gerrymandering and reverse gerrymandering for minority representation. They also reduce reliance on complex, gameable fairness measures, independent commissions, or algorithmic design choices.
+
+For Pennsylvania, we propose a six-district congressional plan with five three-member districts and one two-member district centered on Philadelphia. This recommendation follows from the geographic constraints documented above; we have not simulated the mixed-magnitude configuration directly. In simulations, Philadelphia reliably elected two Democrats and frequently a third—making a two-member district there likely to elect two Democrats, while offering long-term potential for competition. Elsewhere, three-member districts encouraged diversity and representation. Every block group appeared at times in both 2:1 Democratic and 2:1 Republican configurations. This means that every region, urban or rural, offers both parties a foothold, fostering accountability and dialogue. Critically, a party willing to build coalitions with centrists or independents gains a 2:1 advantage, while parties ignoring this bloc risk losing it to challengers. This dynamic opens space for new entrants and moderates, reducing zero-sum partisan conflict.
+
+Our recommendation for PA is consistent with @garg2026's cross-state finding that three-member STV districts deliver proportional outcomes broadly across the U.S. What the Pennsylvania case adds is a concrete picture of how the number of three-member districts actually fits a state's geography and how outcomes depend on where its largest clusters sit relative to the per-district population threshold. The two-member Philadelphia district in our recommended plan is a direct consequence of: 1)Philadelphia's distinct population cluster sitting at the scale of a single two-member congressional district; 2)its location mostly within a county whose boundaries must be preserved under constitutional requirement; and 3)its site within a corner of the state which is not easily divided to produce more heterogeneous districts. This complex geography reflects the need for caution before applying national-level reforms.
+  
+In sum, by reframing redistricting as a problem of scale and geography, we illuminate a path toward democratic reform. Multi-member districts do more than improve fairness in seat-vote ratios: they create electoral spaces that reward coalition-building and strengthen important other metrics of representation. They offer a compelling alternative to the partisan border wars and merit further exploration in other states facing similar challenges.
+
+## References
