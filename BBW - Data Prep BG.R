@@ -20,7 +20,7 @@ source("BBW - Custom Functions.R")
 #R Global variable set
 overwrite = FALSE
 #Pipeline verbosity. Set FALSE *before* sourcing this script (e.g. in
-#GA_submission.qmd's setup chunk: `verbose <- FALSE` then source(...)) to
+#Beyond_the_Border_Wars.qmd's setup chunk: `verbose <- FALSE` then source(...)) to
 #silence the per-batch progress messages from the SMC, shortburst, and
 #metric helpers. Errors and warnings always print regardless.
 if(!exists("verbose")) verbose <- TRUE
@@ -270,10 +270,10 @@ if(!file.exists(dataset_cache) | overwrite==TRUE){
 #combinations using different machines and generating cloud storage conflicts. These
 #two functions examine how many simulations are completed already and call the appropriate
 #functions to run more simulations if the target (250K sims per config) isn't yet met.
-#Unconstrained SMC ensemble -- not surfaced by the main paper (which uses
-#the combined county_cousub ensemble built below). Re-enable if a
-#supplementary section needs the unconstrained variant.
-#maybe_silent(ensure_smc_all(target_nsims = 250000L, batch_size = 10000L))
+#Unconstrained SMC ensemble -- not used in the main paper, but required for the
+#unconstrained comparison in Supplementary Materials Section 2 (heterogeneity_bg /
+#eg_bg). Cache-gated: no-ops once each config holds 250k plans.
+maybe_silent(ensure_smc_all(target_nsims = 250000L, batch_size = 10000L))
 
 #Admin-preserving plans: counties -- DROPPED. The county-only ensemble was
 #removed from the analysis: it was degenerate (only a handful of distinct plans
@@ -339,7 +339,7 @@ for(spec in district_specs){
 #constraints; the combined pass stacks county+cousub constraints
 #matching the SMC settings (strengths 1, 3). Each writes its own cache
 #(shortburst_bg_d{NN}.Rdata vs shortburst_bg_d{NN}_county_cousub.Rdata).
-#Unconstrained pass is not surfaced in any current figure (GA_submission
+#Unconstrained pass is not surfaced in any current figure (Beyond_the_Border_Wars.qmd
 #filters sb_overlay to ensemble == "county_cousub"), so don't pay the
 #compute cost. Re-enable if a supplementary section needs the unconstrained
 #shortburst envelope.
@@ -349,7 +349,7 @@ for(spec in district_specs){
 #flipprob_max) are picked up incrementally on rerun: existing cache entries
 #stay, only the two new keys are computed and atomically saved.
 #ensure_shortburst_all()
-#ccstruct_m5 = NEW main (hard county + soft municipality), overlaid by GA_submission;
+#ccstruct_m5 = NEW main (hard county + soft municipality), overlaid by Beyond_the_Border_Wars.qmd;
 #county_cousub = OLD main, retained for the Supplementary Materials. Both caches
 #already exist on disk, so these calls are cache-gated no-ops.
 maybe_silent(ensure_shortburst_all(admin_col = "ccstruct_m5"))
@@ -405,7 +405,7 @@ if(!file.exists("./Output Data/metrics_bg.Rdata") | overwrite==TRUE){
 .metric_variants <- list(
   list(admin_col = NULL,            suffix = ""),               # unconstrained BG (Supplementary Section 2)
   #list(admin_col = "county_fips",   suffix = "_county_fips"),
-  list(admin_col = "ccstruct_m5",   suffix = "_ccstruct_m5"),  # NEW main (GA_submission)
+  list(admin_col = "ccstruct_m5",   suffix = "_ccstruct_m5"),  # NEW main (Beyond_the_Border_Wars.qmd)
   list(admin_col = "county_cousub", suffix = "_county_cousub") # OLD main (Supplementary)
 )
 for(v in .metric_variants){
@@ -544,7 +544,7 @@ for(v in .variants){
 #plan with columns Type, mean_polsby_popper, min_polsby_popper,
 #max_polsby_popper.
 .pp_variants <- list(
-  list(admin_col = "ccstruct_m5",   suffix = "_ccstruct_m5"),  # NEW main (GA_submission)
+  list(admin_col = "ccstruct_m5",   suffix = "_ccstruct_m5"),  # NEW main (Beyond_the_Border_Wars.qmd)
   list(admin_col = "county_cousub", suffix = "_county_cousub") # OLD main (Supplementary)
   #county-only variant dropped (see .metric_variants above)
   #list(admin_col = "county_fips",   suffix = "_county_fips")
@@ -777,7 +777,7 @@ if(!all(file.exists(.tract_out)) | overwrite){
 rm(.tract_out)
 
 #Bring the NEW main ccstruct_m5 variant (hard county + soft municipality)
-#into scope under the unsuffixed names that GA_submission.qmd expects. The
+#into scope under the unsuffixed names that Beyond_the_Border_Wars.qmd expects. The
 #OLD county_cousub variant stays on disk (*_county_cousub.Rdata) for the
 #Supplementary Materials, which load it explicitly where needed.
 load("./Output Data/heterogeneity_bg_ccstruct_m5.Rdata")  # heterogeneity
@@ -808,6 +808,19 @@ if(!file.exists("./Output Data/sb_overlay.Rdata") | overwrite==TRUE){
   save(sb_overlay, file = "./Output Data/sb_overlay.Rdata")
 }else{
   load("./Output Data/sb_overlay.Rdata")
+}
+
+#Congressional Black Caucus membership vs district BVAP for U.S. House districts
+#(Supplementary Materials BVAP-threshold figure).
+if(!file.exists("./Output Data/BlackCBC.Rdata") | overwrite==TRUE){
+  BlackCBC <- read.csv("./Input Data/PresidentialResultsAndBVAP.csv",
+                       stringsAsFactors = FALSE)
+  BlackCBC$bvap_pct  <- BlackCBC$bvap_pct * 100
+  BlackCBC$is_in_cbc <- factor(BlackCBC$is_in_cbc, levels = c(TRUE, FALSE),
+                               labels = c("Yes", "No"))
+  save(BlackCBC, file = "./Output Data/BlackCBC.Rdata")
+}else{
+  load("./Output Data/BlackCBC.Rdata")
 }
 
 #Block-group-level diagnostics for Pennsylvania's two most recent enacted
@@ -877,7 +890,7 @@ if(!file.exists("./Output Data/penalty_sweep.Rdata") | overwrite==TRUE){
   rm(.penalty_cells, penalty_sweep)
 }
 
-#Clean up the workspace for GA_submission. GA_submission.qmd consumes only
+#Clean up the workspace for the manuscript. Beyond_the_Border_Wars.qmd consumes only
 #bgs, heterogeneity, t_comp, eg, and sb_overlay -- everything else is
 #scaffolding from the build pipeline.
 rm(

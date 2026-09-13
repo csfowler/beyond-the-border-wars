@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the article below."
+title: "Beyond the Border Wars: Representation, Scale, and Multi-Member Districts (replication code)"
+authors:
+  - family-names: Fowler
+    given-names: Christopher S.
+    affiliation: Penn State University
+  - family-names: Fowler
+    given-names: Linda L.
+    affiliation: Dartmouth College
+repository-code: "https://github.com/csfowler/beyond-the-border-wars"
+preferred-citation:
+  type: article
+  title: "Beyond the Border Wars: Representation, Scale, and Multi-Member Districts"
+  authors:
+    - family-names: Fowler
+      given-names: Christopher S.
+    - family-names: Fowler
+      given-names: Linda L.
+  journal: "Geographical Analysis"
+  year: 2026
+  doi: "10.1111/gean.70057"

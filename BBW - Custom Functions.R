@@ -2359,7 +2359,7 @@ score_shortburst_optima <- function(bgs){
                   "9" = "Nine Districts",  "17"= "Seventeen Districts",
                   "18"= "Eighteen Districts","50" = "Fifty Districts")[as.character(nd)]
     #county_cousub = OLD main (retained for Supplementary); ccstruct_m5 = NEW
-    #main (GA_submission overlays). Both are scored when their shortburst cache
+    #main (Beyond_the_Border_Wars.qmd overlays). Both are scored when their shortburst cache
     #exists; configs/ensembles with no cache are silently skipped.
     for(ensemble in c("unconstrained", "county_cousub", "ccstruct_m5")){
       suffix <- if(identical(ensemble, "unconstrained")) "" else paste0("_", ensemble)
